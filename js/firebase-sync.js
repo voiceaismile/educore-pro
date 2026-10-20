@@ -247,11 +247,23 @@ class FirebaseSyncManager {
     for (const storeName of storeNames) {
       try {
         const snap = await sdk.get(sdk.child(sdk.ref(this.rtdb), storeName));
-        if (!snap.exists()) continue;
-        const data = snap.val();
-        if (!data || typeof data !== "object") continue;
+        const data = snap.exists() ? snap.val() : null;
+        const records = (data && typeof data === "object")
+          ? Object.values(data).filter(r => r && r.id)
+          : [];
+        const rtdbIds = new Set(records.map(r => r.id));
 
-        const records = Object.values(data).filter(r => r && r.id);
+        // v3.4 — Mirror: delete local records that no longer exist in RTDB
+        // (so deleted/junk data doesn't linger in IndexedDB)
+        try {
+          const localRecs = await db.getAll(storeName);
+          for (const lr of (localRecs || [])) {
+            if (lr && lr.id && !rtdbIds.has(lr.id)) {
+              await db.delete(storeName, lr.id, false);
+            }
+          }
+        } catch (e) {}
+
         for (const rec of records) {
           // Upsert: RTDB wins (latest information). queueSync=false
           // so pulled data isn't re-queued for push.
