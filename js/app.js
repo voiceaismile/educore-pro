@@ -27,7 +27,7 @@ import { renderDateSheetView, bindDateSheetEvents } from "./datesheet.js";
 import { renderLibraryView, bindLibraryEvents } from "./library.js";
 import { renderStaffAttendanceView, renderLeaveView, bindStaffEvents } from "./staff.js";
 import { renderIdCardsView, bindIdCardEvents } from "./idcards.js";
-import { renderRolesView, bindRolesEvents, hasPermission } from "./roles.js";
+import { renderRolesView, bindRolesEvents, hasPermission, filterNavByRole } from "./roles.js";
 import { renderAdmissionsView, bindAdmissionsEvents } from "./admissions.js";
 import { renderTransportView, bindTransportEvents } from "./transport.js";
 import { parentLoginHtml, renderParentDashboard, bindParentPortalEvents, getParentSession, parentLogout } from "./parent-portal.js";
