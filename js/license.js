@@ -141,10 +141,11 @@ class LicenseManager {
       } catch (e) {}
     }
 
-    // 5. If none of the automated methods succeeded, display the activation prompt
+    // 5. If none of the automated methods succeeded, do NOT block.
+    // v3.9 — Never show blocking lock screen on boot; the app shows a
+    // non-blocking banner instead, and activation is available on demand.
     this.isValid = false;
     this.errorMessage = "Commercial License Key & Owner CNIC required. Please activate the School Management Panel.";
-    this.showLockScreen(this.errorMessage);
     return false;
   }
 
