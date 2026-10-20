@@ -89,6 +89,18 @@ export const DEFAULT_CONFIG = {
     }
   },
 
+  // --- 💳 Online Fee Collection (v2.1 — JazzCash / EasyPaisa / Bank) ---
+  // School's own receiving accounts. Parents send fee to these numbers,
+  // then share the TID (transaction ID) with the school for verification.
+  payments: {
+    jazzcashNumber: "",
+    easypaisaNumber: "",
+    bankName: "",
+    bankAccountTitle: "",
+    bankAccount: "",
+    instructions: ""
+  },
+
   // --- 🎨 Appearance & Theme ---
   theme: {
     primaryColor: "#4f46e5", // Modern Royal Indigo
@@ -155,7 +167,9 @@ export function getAppConfig() {
         contact: { ...DEFAULT_CONFIG.landingPage.contact, ...(parsed.landingPage?.contact || {}) }
       };
 
-      return { ...DEFAULT_CONFIG, ...parsed, firebase: fbConfig, landingPage };
+      const payments = { ...DEFAULT_CONFIG.payments, ...(parsed.payments || {}) };
+
+      return { ...DEFAULT_CONFIG, ...parsed, firebase: fbConfig, landingPage, payments };
     }
   } catch (e) {
     console.warn("Could not read custom config from localStorage:", e);

@@ -54,14 +54,29 @@ export function feeReminderMessage(studentName, fee, config, reminderNo = 1) {
   };
   const g = greetings[Math.min(reminderNo, 3)];
 
-  return (
+  let msg =
     `${g}\n\n` +
     `${school} ki taraf se ittila: ${name} ki *${fee.type || "fee"}* ` +
     `(${cur} ${amount}) ki aakhri tareekh *${due}* thi/guzaar chuki hai.\n\n` +
     `Barah-e-karam jald ada kar dein taake bachay ki parhai mutasir na ho. ` +
     `Raseed hasil karne ke liye school office tashreef layein.\n\n` +
-    `Shukriya!\n${school}`
-  );
+    `Shukriya!\n${school}`;
+
+  // v2.1 — append online payment info when school has numbers configured
+  // (inline check to avoid circular import with onlinepay.js)
+  try {
+    const pay = (config && config.payments) || {};
+    const jc = (pay.jazzcashNumber || "").trim();
+    const ep = (pay.easypaisaNumber || "").trim();
+    if (jc || ep) {
+      const parts = [];
+      if (jc) parts.push(`JazzCash ${jc}`);
+      if (ep) parts.push(`EasyPaisa ${ep}`);
+      msg += `\n\n💳 Online payment: ${parts.join(" / ")}\nPayment ke baad TID WhatsApp par bhejein.`;
+    }
+  } catch (e) {}
+
+  return msg;
 }
 
 /**

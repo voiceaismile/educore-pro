@@ -12,6 +12,7 @@ import { syncManager } from "./firebase-sync.js";
 import { uploadImageToImgbb } from "./imgbb.js";
 import { licenseManager } from "./license.js";
 import { normalizePakPhone, waLink, daysOverdue, feeReminderMessage, resultShareMessage, defaulterSummaryText } from "./whatsapp.js";
+import { PAYMENT_METHODS, getPaymentSettings, hasPaymentSettings, paymentInstructionsHTML, buildPaymentRecord, methodLabel } from "./onlinepay.js";
 
 class SchoolApp {
   constructor() {
@@ -1149,6 +1150,13 @@ class SchoolApp {
     const overdue = pending.filter(f => daysOverdue(f.dueDate) > 0);
     const pendingTotal = pending.reduce((s, f) => s + Number(f.amount || 0), 0);
 
+    // v2.1 — pending online payment verifications
+    let pendingVerifs = [];
+    try {
+      const allPays = await db.getAll(STORES.ONLINE_PAYMENTS);
+      pendingVerifs = allPays.filter(p => p.status === "pending");
+    } catch (e) { pendingVerifs = []; }
+
     return `
       <div class="page-header">
         <div class="page-title-group">
@@ -1173,6 +1181,51 @@ class SchoolApp {
           <div><strong>${this.config.currency}${pendingTotal.toLocaleString()}</strong> total outstanding</div>
           <div><strong>${overdue.length}</strong> overdue</div>
           <span style="color:#64748b; font-size:0.9em;">v2.0 — WhatsApp reminders enabled</span>
+        </div>
+      </div>` : ""}
+
+      ${pendingVerifs.length ? `
+      <div class="card" style="border-left:4px solid #0ea5e9; margin-bottom:16px;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 class="card-title"><i class="fa-solid fa-money-bill-transfer" style="color:#0ea5e9;"></i> Pending Online Payment Verifications (${pendingVerifs.length})</h3>
+          <span class="badge badge-info">v2.1</span>
+        </div>
+        <div class="table-container">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>TID / Reference</th>
+                <th>Sender Phone</th>
+                <th>Date</th>
+                <th style="text-align:right;">Verify</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pendingVerifs.map(p => `
+                <tr>
+                  <td><strong>${p.studentName}</strong></td>
+                  <td><strong>${this.config.currency}${Number(p.amount).toLocaleString()}</strong></td>
+                  <td><span class="badge badge-info">${methodLabel(p.method)}</span></td>
+                  <td><code>${p.tid || "—"}</code></td>
+                  <td>${p.senderPhone || "—"}</td>
+                  <td>${p.date || "—"}</td>
+                  <td style="text-align:right;">
+                    <div style="display:inline-flex; gap:6px;">
+                      <button class="btn btn-success btn-sm btn-verify-online-pay" data-id="${p.id}">
+                        <i class="fa-solid fa-check"></i> Verify
+                      </button>
+                      <button class="btn btn-danger btn-sm btn-reject-online-pay" data-id="${p.id}">
+                        <i class="fa-solid fa-xmark"></i> Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
         </div>
       </div>` : ""}
 
@@ -1211,6 +1264,9 @@ class SchoolApp {
                         </button>
                         <button class="icon-action-btn btn-wa-remind" data-id="${f.id}" title="Send WhatsApp fee reminder to parent" style="color:#25D366;">
                           <i class="fa-brands fa-whatsapp"></i>
+                        </button>
+                        <button class="btn btn-info btn-sm btn-record-online-pay" data-id="${f.id}" title="Record online payment (JazzCash / EasyPaisa) with TID">
+                          <i class="fa-solid fa-money-bill-transfer"></i> Online
                         </button>
                       ` : ''}
                       <button class="icon-action-btn btn-print-receipt" data-id="${f.id}" title="Print Official Receipt">
@@ -1320,6 +1376,46 @@ class SchoolApp {
         } catch (e) {
           this.showToast("Copy failed — select the text manually.", "error");
         }
+      });
+    });
+
+    // v2.1 — record an online payment (parent sent fee, shares TID)
+    document.querySelectorAll(".btn-record-online-pay").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this.showOnlinePaymentModal(btn.getAttribute("data-id"));
+      });
+    });
+
+    // v2.1 — verify a pending online payment → invoice paid
+    document.querySelectorAll(".btn-verify-online-pay").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const pay = await db.getById(STORES.ONLINE_PAYMENTS, btn.getAttribute("data-id"));
+        if (!pay || pay.status !== "pending") return;
+        const today = new Date().toISOString().split("T")[0];
+        pay.status = "verified";
+        pay.verifiedAt = today;
+        await db.update(STORES.ONLINE_PAYMENTS, pay);
+        const fee = await db.getById(STORES.FEES, pay.feeId);
+        if (fee) {
+          fee.status = "paid";
+          fee.paidDate = today;
+          fee.paymentMethod = `${methodLabel(pay.method)} (TID ${pay.tid || "—"})`;
+          await db.update(STORES.FEES, fee);
+        }
+        this.showToast("Payment verified — invoice marked PAID!", "success");
+        this.refreshCurrentView();
+      });
+    });
+
+    // v2.1 — reject a pending online payment
+    document.querySelectorAll(".btn-reject-online-pay").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const pay = await db.getById(STORES.ONLINE_PAYMENTS, btn.getAttribute("data-id"));
+        if (!pay || pay.status !== "pending") return;
+        pay.status = "rejected";
+        await db.update(STORES.ONLINE_PAYMENTS, pay);
+        this.showToast("Payment rejected.", "info");
+        this.refreshCurrentView();
       });
     });
   }
@@ -1512,6 +1608,9 @@ class SchoolApp {
         </button>
         <button type="button" class="settings-tab-btn ${activeTab === 'license' ? 'active' : ''}" data-settings-tab="license">
           <i class="fa-solid fa-shield-halved"></i> Software License
+        </button>
+        <button type="button" class="settings-tab-btn ${activeTab === 'payments' ? 'active' : ''}" data-settings-tab="payments">
+          <i class="fa-solid fa-money-bill-transfer"></i> Online Fee Collection
         </button>
       </div>
 
@@ -2097,6 +2196,58 @@ class SchoolApp {
         </div>
       </div>
 
+      <!-- ====================================================================
+           TAB 5: ONLINE FEE COLLECTION (v2.1 — JazzCash / EasyPaisa / Bank)
+           ==================================================================== -->
+      <div class="settings-tab-pane ${activeTab === 'payments' ? 'active' : ''}" id="tabPanePayments">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fa-solid fa-money-bill-transfer" style="color:#0ea5e9;"></i> Online Fee Collection Settings</h3>
+            <span class="badge badge-info">v2.1</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-muted); margin:0 0 16px 0;">
+            School ke apne JazzCash / EasyPaisa numbers aur bank account yahan save karein.
+            Parents fee in numbers par bhejenge, phir <strong>TID (transaction ID)</strong> school ko denge —
+            admin Fee Management me jaa kar payment verify karega.
+          </p>
+          <form id="formPaymentSettings">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-mobile-screen" style="color:#e11d48;"></i> JazzCash Number</label>
+                <input type="text" class="form-control" id="payJazzcashNumber" value="${getPaymentSettings(config).jazzcashNumber || ''}" placeholder="0300-1234567">
+              </div>
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-mobile-screen" style="color:#16a34a;"></i> EasyPaisa Number</label>
+                <input type="text" class="form-control" id="payEasypaisaNumber" value="${getPaymentSettings(config).easypaisaNumber || ''}" placeholder="0345-1234567">
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-top:4px;">
+              <div class="form-group">
+                <label class="form-label">Bank Name</label>
+                <input type="text" class="form-control" id="payBankName" value="${getPaymentSettings(config).bankName || ''}" placeholder="e.g. Meezan Bank">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Account Title</label>
+                <input type="text" class="form-control" id="payBankAccountTitle" value="${getPaymentSettings(config).bankAccountTitle || ''}" placeholder="School name on account">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Account Number / IBAN</label>
+                <input type="text" class="form-control" id="payBankAccount" value="${getPaymentSettings(config).bankAccount || ''}" placeholder="PK36...">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:4px;">
+              <label class="form-label">Extra Instructions for Parents (optional)</label>
+              <textarea class="form-control" id="payInstructions" rows="2" placeholder="e.g. Raat 8 baje ke baad ki payments agli subah verify hongi.">${getPaymentSettings(config).instructions || ''}</textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-floppy-disk"></i> Save Payment Settings
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
     `;
   }
 
@@ -2111,6 +2262,7 @@ class SchoolApp {
         const targetPane = document.getElementById(
           tab === "landing_cms" ? "tabPaneLandingCMS" :
           tab === "branding" ? "tabPaneBranding" :
+          tab === "payments" ? "tabPanePayments" :
           tab === "cloud" ? "tabPaneCloud" : "tabPaneLicense"
         );
         if (targetPane) targetPane.classList.add("active");
@@ -2208,6 +2360,23 @@ class SchoolApp {
       } catch (err) {}
 
       this.showToast("Landing page website information updated & published successfully!", "success");
+    });
+
+    // v2.1 — Online Fee Collection settings form
+    document.getElementById("formPaymentSettings")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const payments = {
+        jazzcashNumber: document.getElementById("payJazzcashNumber")?.value.trim() || "",
+        easypaisaNumber: document.getElementById("payEasypaisaNumber")?.value.trim() || "",
+        bankName: document.getElementById("payBankName")?.value.trim() || "",
+        bankAccountTitle: document.getElementById("payBankAccountTitle")?.value.trim() || "",
+        bankAccount: document.getElementById("payBankAccount")?.value.trim() || "",
+        instructions: document.getElementById("payInstructions")?.value.trim() || ""
+      };
+      saveAppConfig({ payments });
+      this.config = getAppConfig();
+      this.showToast("Online fee collection settings saved successfully!", "success");
+      this.refreshCurrentView();
     });
     const logoUrlInput = document.getElementById("cfgLogoUrl");
     const logoPreviewBox = document.getElementById("logoPreviewBox");
@@ -3673,6 +3842,8 @@ export function saveAppConfig(newConfig) {
             <span>${this.config.currency}${Number(fee.amount).toLocaleString()}</span>
           </div>
 
+          ${fee.status === "pending" ? paymentInstructionsHTML(this.config, fee.amount) : ""}
+
           <div class="receipt-footer-stamp">
             <div>
               <em>System generated official receipt. Verified electronically.</em>
@@ -3906,6 +4077,72 @@ export function saveAppConfig(newConfig) {
   }
 
   // --- Fee Invoice Modal ---
+  // --- v2.1 — Record Online Payment (JazzCash / EasyPaisa / Bank) ---
+  async showOnlinePaymentModal(feeId) {
+    const fee = await db.getById(STORES.FEES, feeId);
+    if (!fee) return;
+
+    const today = new Date().toISOString().split("T")[0];
+    const body = `
+      <form id="onlinePayForm">
+        <div class="form-group">
+          <label class="form-label">Student</label>
+          <input type="text" class="form-control" value="${fee.studentName} — ${this.config.currency}${Number(fee.amount).toLocaleString()}" disabled>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <select class="form-control" id="opMethod" required>
+              ${PAYMENT_METHODS.map(m => `<option value="${m.id}">${m.label}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Date</label>
+            <input type="date" class="form-control" id="opDate" value="${today}" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">TID / Transaction Reference</label>
+            <input type="text" class="form-control" id="opTid" placeholder="e.g. 34567890123" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sender Phone (optional)</label>
+            <input type="text" class="form-control" id="opSenderPhone" placeholder="03xx-xxxxxxx">
+          </div>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin:0;">
+          <i class="fa-solid fa-circle-info"></i> Payment "Pending Verification" me jayegi —
+          JazzCash / EasyPaisa app me TID check karke Fee Management se <strong>Verify</strong> karein.
+        </p>
+      </form>
+    `;
+
+    const footer = `
+      <button class="btn btn-secondary" onclick="window.schoolApp.closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="btnSaveOnlinePay">Submit for Verification</button>
+    `;
+
+    this.openModal("Record Online Payment", body, footer);
+
+    document.getElementById("btnSaveOnlinePay")?.addEventListener("click", async () => {
+      const record = buildPaymentRecord({
+        feeId: fee.id,
+        studentId: fee.studentId,
+        studentName: fee.studentName,
+        amount: fee.amount,
+        method: document.getElementById("opMethod").value,
+        tid: document.getElementById("opTid").value,
+        senderPhone: document.getElementById("opSenderPhone").value,
+        date: document.getElementById("opDate").value
+      });
+      await db.add(STORES.ONLINE_PAYMENTS, record);
+      this.showToast("Payment submitted for verification!", "success");
+      this.closeModal();
+      this.refreshCurrentView();
+    });
+  }
+
   async showFeeInvoiceModal() {
     const students = await db.getAll(STORES.STUDENTS);
 

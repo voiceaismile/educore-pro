@@ -1,6 +1,6 @@
 {
   "name": "educore-school-management",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "description": "Offline-first School Management System with Firebase RTDB & Firestore backup",
   "main": "server.js",
   "scripts": {

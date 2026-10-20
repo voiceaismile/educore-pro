@@ -8,7 +8,7 @@
  */
 
 const DB_NAME = "EduCoreSchoolDB";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export const STORES = {
   USERS: "users",
@@ -20,6 +20,7 @@ export const STORES = {
   FEES: "fees",
   NOTICES: "notices",
   INQUIRIES: "inquiries",
+  ONLINE_PAYMENTS: "onlinePayments",
   SYNC_QUEUE: "syncQueue"
 };
 
@@ -88,6 +89,12 @@ class LocalDatabase {
           const inqStore = db.createObjectStore(STORES.INQUIRIES, { keyPath: "id" });
           inqStore.createIndex("status", "status", { unique: false });
           inqStore.createIndex("phone", "phone", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.ONLINE_PAYMENTS)) {
+          const payStore = db.createObjectStore(STORES.ONLINE_PAYMENTS, { keyPath: "id" });
+          payStore.createIndex("feeId", "feeId", { unique: false });
+          payStore.createIndex("status", "status", { unique: false });
         }
 
         if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
@@ -311,6 +318,7 @@ class LocalDatabase {
       STORES.GRADES,
       STORES.NOTICES,
       STORES.INQUIRIES,
+      STORES.ONLINE_PAYMENTS,
       STORES.SYNC_QUEUE
     ];
 
