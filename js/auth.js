@@ -7,6 +7,7 @@
  */
 
 import { db, STORES } from "./db.js";
+import { sessionLock } from "./session-lock.js";
 
 const SESSION_KEY = "educore_active_session";
 
@@ -97,7 +98,9 @@ class AuthManager {
     window.dispatchEvent(new CustomEvent("authStateChanged", { detail: { user } }));
   }
 
-  logout() {
+  async logout() {
+    // v3.3 — release the admin session lock (best effort, non-blocking)
+    try { await sessionLock.release(); } catch (e) {}
     this.currentUser = null;
     sessionStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(SESSION_KEY);
@@ -157,6 +160,11 @@ class AuthManager {
     } else if (match.role === "student" && match.studentId) {
       const studentDetails = await db.getById(STORES.STUDENTS, match.studentId);
       if (studentDetails) fullProfile.studentProfile = studentDetails;
+    }
+
+    // v3.3 — Single admin session: block if another admin is actively logged in
+    if (fullProfile.role === "admin") {
+      await sessionLock.acquire(fullProfile); // throws if another admin holds the lock
     }
 
     this.setSession(fullProfile);
