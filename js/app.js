@@ -46,6 +46,16 @@ class SchoolApp {
   }
 
   async init() {
+    // v3.8 DEBUG — collect errors for diagnosis
+    if (!window._educoreErrors) {
+      window._educoreErrors = [];
+      window.addEventListener("error", (e) => {
+        window._educoreErrors.push(e.message + " @ " + (e.filename || "").split("/").pop() + ":" + e.lineno);
+      });
+      window.addEventListener("unhandledrejection", (e) => {
+        window._educoreErrors.push("Promise: " + (e.reason?.message || e.reason));
+      });
+    }
     this.applyThemeAndBranding();
     this.bindGlobalEvents();
 
