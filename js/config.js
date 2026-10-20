@@ -101,6 +101,14 @@ export const DEFAULT_CONFIG = {
     instructions: ""
   },
 
+  // --- 📩 SMS Gateway (v3.0 — fee reminder fallback for non-WhatsApp parents) ---
+  sms: {
+    provider: "",
+    apiKey: "",
+    senderId: "",
+    enabled: false
+  },
+
   // --- 🎨 Appearance & Theme ---
   theme: {
     primaryColor: "#4f46e5", // Modern Royal Indigo
@@ -168,8 +176,9 @@ export function getAppConfig() {
       };
 
       const payments = { ...DEFAULT_CONFIG.payments, ...(parsed.payments || {}) };
+      const sms = { ...DEFAULT_CONFIG.sms, ...(parsed.sms || {}) };
 
-      return { ...DEFAULT_CONFIG, ...parsed, firebase: fbConfig, landingPage, payments };
+      return { ...DEFAULT_CONFIG, ...parsed, firebase: fbConfig, landingPage, payments, sms };
     }
   } catch (e) {
     console.warn("Could not read custom config from localStorage:", e);

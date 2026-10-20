@@ -8,7 +8,7 @@
  */
 
 const DB_NAME = "EduCoreSchoolDB";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 export const STORES = {
   USERS: "users",
@@ -21,6 +21,15 @@ export const STORES = {
   NOTICES: "notices",
   INQUIRIES: "inquiries",
   ONLINE_PAYMENTS: "onlinePayments",
+  EXPENSES: "expenses",
+  SALARIES: "salaries",
+  DISCOUNTS: "discounts",
+  TIMETABLES: "timetables",
+  DATESHEETS: "datesheets",
+  BOOKS: "books",
+  BOOK_ISSUES: "bookIssues",
+  STAFF_ATTENDANCE: "staffAttendance",
+  LEAVES: "leaves",
   SYNC_QUEUE: "syncQueue"
 };
 
@@ -95,6 +104,55 @@ class LocalDatabase {
           const payStore = db.createObjectStore(STORES.ONLINE_PAYMENTS, { keyPath: "id" });
           payStore.createIndex("feeId", "feeId", { unique: false });
           payStore.createIndex("status", "status", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.EXPENSES)) {
+          const expStore = db.createObjectStore(STORES.EXPENSES, { keyPath: "id" });
+          expStore.createIndex("date", "date", { unique: false });
+          expStore.createIndex("category", "category", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.SALARIES)) {
+          const salStore = db.createObjectStore(STORES.SALARIES, { keyPath: "id" });
+          salStore.createIndex("teacherId", "teacherId", { unique: false });
+          salStore.createIndex("month", "month", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.DISCOUNTS)) {
+          const dscStore = db.createObjectStore(STORES.DISCOUNTS, { keyPath: "id" });
+          dscStore.createIndex("studentId", "studentId", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.TIMETABLES)) {
+          const ttStore = db.createObjectStore(STORES.TIMETABLES, { keyPath: "id" });
+          ttStore.createIndex("classId", "classId", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.DATESHEETS)) {
+          const dsStore = db.createObjectStore(STORES.DATESHEETS, { keyPath: "id" });
+          dsStore.createIndex("classId", "classId", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.BOOKS)) {
+          db.createObjectStore(STORES.BOOKS, { keyPath: "id" });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.BOOK_ISSUES)) {
+          const biStore = db.createObjectStore(STORES.BOOK_ISSUES, { keyPath: "id" });
+          biStore.createIndex("bookId", "bookId", { unique: false });
+          biStore.createIndex("studentId", "studentId", { unique: false });
+          biStore.createIndex("status", "status", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.STAFF_ATTENDANCE)) {
+          const saStore = db.createObjectStore(STORES.STAFF_ATTENDANCE, { keyPath: "id" });
+          saStore.createIndex("date", "date", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.LEAVES)) {
+          const lvStore = db.createObjectStore(STORES.LEAVES, { keyPath: "id" });
+          lvStore.createIndex("teacherId", "teacherId", { unique: false });
+          lvStore.createIndex("status", "status", { unique: false });
         }
 
         if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
@@ -319,6 +377,15 @@ class LocalDatabase {
       STORES.NOTICES,
       STORES.INQUIRIES,
       STORES.ONLINE_PAYMENTS,
+      STORES.EXPENSES,
+      STORES.SALARIES,
+      STORES.DISCOUNTS,
+      STORES.TIMETABLES,
+      STORES.DATESHEETS,
+      STORES.BOOKS,
+      STORES.BOOK_ISSUES,
+      STORES.STAFF_ATTENDANCE,
+      STORES.LEAVES,
       STORES.SYNC_QUEUE
     ];
 

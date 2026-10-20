@@ -13,6 +13,25 @@ import { uploadImageToImgbb } from "./imgbb.js";
 import { licenseManager } from "./license.js";
 import { normalizePakPhone, waLink, daysOverdue, feeReminderMessage, resultShareMessage, defaulterSummaryText } from "./whatsapp.js";
 import { PAYMENT_METHODS, getPaymentSettings, hasPaymentSettings, paymentInstructionsHTML, buildPaymentRecord, methodLabel } from "./onlinepay.js";
+// v3.0 — all-in-one school suite modules
+import { t, getLanguage, setLanguage, applyI18nToStatic, isRTL } from "./i18n.js";
+import { registerServiceWorker, installPromptHandler, isInstallable, showInstallPrompt, renderInstallBanner, wasInstallBannerDismissed, dismissInstallBanner } from "./pwa.js";
+import { renderExpensesView, bindExpensesEvents } from "./expenses.js";
+import { renderPayrollView, bindPayrollEvents } from "./payroll.js";
+import { renderDiscountsSection, bindDiscountsSection, getDiscountSelection, renderDiscountRulesView, bindDiscountRulesEvents, applyDiscount } from "./discounts.js";
+import { renderEscalationDashboard, bindEscalationEvents } from "./escalation.js";
+import { renderSmsSettingsView, bindSmsSettingsEvents, getSmsSettings } from "./sms.js";
+import { renderHomeworkView, bindHomeworkEvents } from "./homework.js";
+import { renderTimetableView, bindTimetableEvents } from "./timetable.js";
+import { renderDateSheetView, bindDateSheetEvents } from "./datesheet.js";
+import { renderLibraryView, bindLibraryEvents } from "./library.js";
+import { renderStaffAttendanceView, renderLeaveView, bindStaffEvents } from "./staff.js";
+import { renderIdCardsView, bindIdCardEvents } from "./idcards.js";
+import { renderRolesView, bindRolesEvents, hasPermission } from "./roles.js";
+import { renderAdmissionsView, bindAdmissionsEvents } from "./admissions.js";
+import { renderTransportView, bindTransportEvents } from "./transport.js";
+import { parentLoginHtml, renderParentDashboard, bindParentPortalEvents, getParentSession, parentLogout } from "./parent-portal.js";
+import { renderImportView, bindImportEvents } from "./excel-import.js";
 
 class SchoolApp {
   constructor() {
@@ -65,9 +84,36 @@ class SchoolApp {
     // 3. Try initializing Firebase sync if configured
     syncManager.initialize();
 
+    // 3b. v3.0 — PWA: service worker + install prompt (non-blocking)
+    installPromptHandler();
+    registerServiceWorker();
+    window.addEventListener("pwaInstallable", () => this.maybeShowInstallBanner());
+
     // 4. License verification runs in BACKGROUND (non-blocking).
     // Portal features remain gated: switchToPortal re-checks license.
     this.checkLicenseInBackground();
+  }
+
+  /**
+   * v3.0 — Show the PWA install banner on the landing page when installable.
+   */
+  maybeShowInstallBanner() {
+    try {
+      if (!isInstallable() || wasInstallBannerDismissed()) return;
+      if (document.getElementById("pwaInstallBanner")) return;
+      const landing = document.getElementById("publicLandingPage");
+      if (!landing) return;
+      landing.insertAdjacentHTML("afterbegin", renderInstallBanner());
+      applyI18nToStatic(document);
+      document.getElementById("btnPwaInstall")?.addEventListener("click", async () => {
+        await showInstallPrompt();
+        document.getElementById("pwaInstallBanner")?.remove();
+      });
+      document.getElementById("btnPwaDismiss")?.addEventListener("click", () => {
+        dismissInstallBanner();
+        document.getElementById("pwaInstallBanner")?.remove();
+      });
+    } catch (e) {}
   }
 
   /**
@@ -196,6 +242,30 @@ class SchoolApp {
         themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
       }
     }
+
+    // v3.0 — Language toggle (EN / اردو)
+    const langBtn = document.getElementById("langToggleBtn");
+    const langLabel = document.getElementById("langToggleLabel");
+    const syncLangLabel = () => {
+      if (langLabel) langLabel.textContent = getLanguage() === "ur" ? "EN" : "اردو";
+    };
+    syncLangLabel();
+    if (langBtn) {
+      langBtn.addEventListener("click", () => {
+        const next = getLanguage() === "ur" ? "en" : "ur";
+        setLanguage(next);
+      });
+    }
+    window.addEventListener("languageChanged", () => {
+      syncLangLabel();
+      applyI18nToStatic(document);
+      // Re-render current view so dynamic strings translate
+      if (auth.getCurrentUser()) {
+        this.refreshCurrentView();
+      } else {
+        this.renderPublicLandingPage();
+      }
+    });
 
     // Sidebar mobile toggle (v2.2: drawer + backdrop + auto-close)
     const menuToggle = document.getElementById("menuToggleBtn");
@@ -337,7 +407,24 @@ class SchoolApp {
         { id: "attendance", label: "Attendance", icon: "fa-clipboard-check", section: "Academic" },
         { id: "fees", label: "Fee Management", icon: "fa-file-invoice-dollar" },
         { id: "grades", label: "Exams & Grades", icon: "fa-award" },
+        { id: "homework", label: "Homework", icon: "fa-book-open", permission: "homework" },
+        { id: "timetable", label: "Timetable", icon: "fa-calendar-days", permission: "view_all" },
+        { id: "datesheet", label: "Date Sheet", icon: "fa-calendar-check", permission: "view_all" },
+        { id: "library", label: "Library", icon: "fa-book", permission: "view_all" },
+        { id: "idcards", label: "ID Cards", icon: "fa-id-card", permission: "view_all" },
         { id: "notices", label: "Notice Board", icon: "fa-bullhorn" },
+        { id: "expenses", label: "Expenses", icon: "fa-wallet", section: "Finance", permission: "expenses" },
+        { id: "payroll", label: "Payroll", icon: "fa-money-check-dollar", permission: "payroll" },
+        { id: "concessions", label: "Concessions", icon: "fa-percent", permission: "fees" },
+        { id: "reminders", label: "Fee Reminders", icon: "fa-bell", permission: "fees" },
+        { id: "sms", label: "SMS Gateway", icon: "fa-message", permission: "fees" },
+        { id: "staff_attendance", label: "Staff Attendance", icon: "fa-user-check", section: "Staff", permission: "view_all" },
+        { id: "leaves", label: "Leave Requests", icon: "fa-plane", permission: "approve_leave" },
+        { id: "admissions", label: "Admissions", icon: "fa-user-plus", section: "Operations", permission: "view_all" },
+        { id: "transport", label: "Transport", icon: "fa-bus", permission: "view_all" },
+        { id: "parent_portal", label: "Parent Portal", icon: "fa-users", permission: "view_all" },
+        { id: "import", label: "Excel Import", icon: "fa-file-import", permission: "view_all" },
+        { id: "roles", label: "Roles & Access", icon: "fa-user-shield", permission: "*" },
         { id: "landing_cms", label: "Landing Page CMS", icon: "fa-window-maximize", section: "System" },
         { id: "settings", label: "Settings & Cloud", icon: "fa-sliders" }
       ];
@@ -360,6 +447,10 @@ class SchoolApp {
         { id: "notices", label: "Announcements", icon: "fa-bullhorn" }
       ];
     }
+
+    // v3.0 — hide nav items the user's role may not access
+    items = filterNavByRole(items, user);
+    this._lastNavItems = items;
 
     let menuHtml = "";
     let lastSection = "";
@@ -439,6 +530,17 @@ class SchoolApp {
       licenseManager.showLockScreen("A valid commercial license is required to access the School Management System.");
       return;
     }
+    // v3.0 — role-based access: deny views the user's role may not open
+    try {
+      const user = auth.getCurrentUser();
+      // Find the nav item to check its declared permission (admin list)
+      const navItems = this._lastNavItems || [];
+      const item = navItems.find(n => n.id === viewId);
+      if (item && item.permission && !hasPermission(user, item.permission)) {
+        this.showToast("Access denied for your role.", "error");
+        return;
+      }
+    } catch (e) {}
     if (viewId === "public_website") {
       this.renderPublicLandingPage();
       return;
@@ -510,6 +612,76 @@ class SchoolApp {
       case "settings":
         contentArea.innerHTML = await this.renderSettingsView();
         this.bindSettingsEvents();
+        break;
+
+      // v3.0 — All-in-one suite views
+      case "expenses":
+        contentArea.innerHTML = await renderExpensesView(this);
+        bindExpensesEvents(this);
+        break;
+      case "payroll":
+        contentArea.innerHTML = await renderPayrollView(this);
+        bindPayrollEvents(this);
+        break;
+      case "concessions":
+        contentArea.innerHTML = await renderDiscountRulesView(this);
+        bindDiscountRulesEvents(this);
+        break;
+      case "reminders":
+        contentArea.innerHTML = await renderEscalationDashboard(this);
+        bindEscalationEvents(this);
+        break;
+      case "sms":
+        contentArea.innerHTML = renderSmsSettingsView(this);
+        bindSmsSettingsEvents(this);
+        break;
+      case "homework":
+        contentArea.innerHTML = await renderHomeworkView(this);
+        bindHomeworkEvents(this);
+        break;
+      case "timetable":
+        contentArea.innerHTML = await renderTimetableView(this);
+        bindTimetableEvents(this);
+        break;
+      case "datesheet":
+        contentArea.innerHTML = await renderDateSheetView(this);
+        bindDateSheetEvents(this);
+        break;
+      case "library":
+        contentArea.innerHTML = await renderLibraryView(this);
+        bindLibraryEvents(this);
+        break;
+      case "staff_attendance":
+        contentArea.innerHTML = await renderStaffAttendanceView(this);
+        bindStaffEvents(this);
+        break;
+      case "leaves":
+        contentArea.innerHTML = await renderLeaveView(this);
+        bindStaffEvents(this);
+        break;
+      case "idcards":
+        contentArea.innerHTML = await renderIdCardsView(this);
+        bindIdCardEvents(this);
+        break;
+      case "admissions":
+        contentArea.innerHTML = await renderAdmissionsView(this);
+        bindAdmissionsEvents(this);
+        break;
+      case "transport":
+        contentArea.innerHTML = await renderTransportView(this);
+        bindTransportEvents(this);
+        break;
+      case "parent_portal":
+        contentArea.innerHTML = await this.renderParentAccountsView();
+        this.bindParentAccountsEvents();
+        break;
+      case "import":
+        contentArea.innerHTML = renderImportView(this);
+        bindImportEvents(this);
+        break;
+      case "roles":
+        contentArea.innerHTML = await renderRolesView(this);
+        bindRolesEvents(this);
         break;
 
       // Teacher Views
@@ -3815,16 +3987,6 @@ export function saveAppConfig(newConfig) {
 
           <div class="admission-signatures-row">
             <div class="admission-sign-col">
-              <div>Admissions Officer</div>
-              <small style="color:#94a3b8; font-size:10px;">Verified by Registry</small>
-            </div>
-            <div style="text-align:center; padding-top:6px;">
-              <div style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:4px; font-weight:700;">
-                |||| | |||||| | ||| ||||
-              </div>
-              <span style="font-size:10px; color:#64748b;">${student.admissionNo}</span>
-            </div>
-            <div class="admission-sign-col">
               <div>Principal / Head of Institution</div>
               <small style="color:#94a3b8; font-size:10px;">Official Seal & Signature</small>
             </div>
@@ -4123,10 +4285,6 @@ export function saveAppConfig(newConfig) {
               <small style="color:#94a3b8; font-size:10px;">Signature</small>
             </div>
             <div class="admission-sign-col">
-              <div>Controller of Examinations</div>
-              <small style="color:#94a3b8; font-size:10px;">Official Audit</small>
-            </div>
-            <div class="admission-sign-col">
               <div>Principal / Headmistress</div>
               <small style="color:#94a3b8; font-size:10px;">Official Seal & Signature</small>
             </div>
@@ -4246,6 +4404,7 @@ export function saveAppConfig(newConfig) {
             </select>
           </div>
         </div>
+        ${renderDiscountsSection(this, 12000)}
       </form>
     `;
 
@@ -4256,10 +4415,18 @@ export function saveAppConfig(newConfig) {
 
     this.openModal("Issue Tuition / Fee Invoice", body, footer);
 
+    // v3.0 — wire live concession computation
+    bindDiscountsSection(Number(document.getElementById("feeAmount")?.value || 12000));
+
     document.getElementById("btnSaveFeeModal")?.addEventListener("click", async () => {
       const select = document.getElementById("feeStudentSelect");
       const opt = select.options[select.selectedIndex];
       const isPaid = document.getElementById("feeStatus").value === "paid";
+      const baseAmount = Number(document.getElementById("feeAmount").value);
+
+      // v3.0 — apply concession if selected
+      const dscSel = getDiscountSelection();
+      const finalAmount = dscSel ? applyDiscount(baseAmount, dscSel) : baseAmount;
 
       const fee = {
         receiptNo: `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -4267,7 +4434,9 @@ export function saveAppConfig(newConfig) {
         studentName: opt.getAttribute("data-name"),
         classId: opt.getAttribute("data-class"),
         type: document.getElementById("feeType").value,
-        amount: Number(document.getElementById("feeAmount").value),
+        amount: finalAmount,
+        originalAmount: dscSel ? baseAmount : undefined,
+        discount: dscSel || undefined,
         dueDate: document.getElementById("feeDueDate").value,
         status: isPaid ? "paid" : "pending",
         paidDate: isPaid ? new Date().toISOString().split("T")[0] : null,
@@ -4275,7 +4444,7 @@ export function saveAppConfig(newConfig) {
       };
 
       await db.add(STORES.FEES, fee);
-      this.showToast("Invoice issued successfully!", "success");
+      this.showToast(dscSel ? `Invoice issued with concession (${this.config.currency}${finalAmount.toLocaleString()}).` : "Invoice issued successfully!", "success");
       this.closeModal();
     });
   }
@@ -4893,6 +5062,10 @@ export function saveAppConfig(newConfig) {
         </button>
 
         <div class="landing-nav-actions">
+          <button class="btn-portal-login" id="btnLandingParentLogin" style="background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.4);">
+            <i class="fa-solid fa-users"></i>
+            <span>Parent Login</span>
+          </button>
           <button class="btn-portal-login" id="btnLandingSignIn">
             <i class="fa-solid fa-right-to-bracket"></i>
             <span>${user ? 'Access Dashboard' : 'Portal Sign In'}</span>
@@ -5234,6 +5407,17 @@ export function saveAppConfig(newConfig) {
     document.getElementById("btnLandingSignIn")?.addEventListener("click", handleLoginClick);
     document.getElementById("heroPortalBtn")?.addEventListener("click", handleLoginClick);
 
+    // v3.0 — Parent Portal login from landing page
+    document.getElementById("btnLandingParentLogin")?.addEventListener("click", () => {
+      this.openModal("Parent Portal Login", parentLoginHtml(), "");
+      bindParentPortalEvents(this, (acc) => {
+        if (acc) {
+          this.closeModal();
+          this.showParentDashboard(acc.studentId);
+        }
+      });
+    });
+
     // v2.2 — Landing mobile nav hamburger
     const landingMenuBtn = document.getElementById("landingMenuToggle");
     const landingNavLinks = document.querySelector("#publicLandingPage .landing-nav-links");
@@ -5299,6 +5483,124 @@ export function saveAppConfig(newConfig) {
         this.showToast(`Submission error: ${err.message}`, "error");
       }
     });
+
+  /**
+   * v3.0 — Show the parent-facing dashboard (from landing page Parent Login).
+   * Renders inside a full modal so the landing page stays behind.
+   */
+  async showParentDashboard(studentId) {
+    const html = await renderParentDashboard(this, studentId);
+    this.openModal("Parent Portal", `<div id="parentDashWrap">${html}</div>`,
+      `<button class="btn btn-secondary" onclick="window.schoolApp.closeModal(); window.schoolApp.renderPublicLandingPage();">Close</button>`);
+    bindParentPortalEvents(this, (acc) => {
+      if (!acc) {
+        this.closeModal();
+        this.renderPublicLandingPage();
+      }
+    });
+  }
+
+  // =========================================================================
+  // v3.0 — PARENT ACCOUNTS (admin management for Parent Portal logins)
+  // =========================================================================
+  async renderParentAccountsView() {
+    const { loadParentAccounts } = await import("./parent-portal.js");
+    const accounts = loadParentAccounts();
+    const students = await db.getAll(STORES.STUDENTS);
+    const studentMap = {};
+    students.forEach(s => { studentMap[s.id] = s; });
+
+    return `
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Parent Portal Accounts</h1>
+          <p>Create PIN logins so parents can view fees, attendance & results.</p>
+        </div>
+        <div class="page-actions-group">
+          <button class="btn btn-primary" id="btnCreateParentAccount">
+            <i class="fa-solid fa-user-plus"></i> Create Account
+          </button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-container">
+          <table class="custom-table">
+            <thead>
+              <tr><th>Student</th><th>Parent Phone</th><th>PIN</th><th style="text-align:right;">Actions</th></tr>
+            </thead>
+            <tbody>
+              ${accounts.length ? accounts.map(a => {
+                const s = studentMap[a.studentId];
+                return `<tr>
+                  <td><strong>${s ? s.name : a.studentId}</strong></td>
+                  <td><code>${a.parentPhone}</code></td>
+                  <td><code>${a.pin}</code></td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-sm btn-secondary btn-delete-parent-acc" data-id="${a.id}">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>`;
+              }).join("") : `<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No parent accounts yet. Create one to get started.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  bindParentAccountsEvents() {
+    document.getElementById("btnCreateParentAccount")?.addEventListener("click", () => this.showParentAccountModal());
+    document.querySelectorAll(".btn-delete-parent-acc").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const { loadParentAccounts, saveParentAccounts } = await import("./parent-portal.js");
+        const accounts = loadParentAccounts().filter(a => a.id !== btn.getAttribute("data-id"));
+        saveParentAccounts(accounts);
+        this.showToast("Parent account deleted.", "info");
+        this.refreshCurrentView();
+      });
+    });
+  }
+
+  async showParentAccountModal() {
+    const students = await db.getAll(STORES.STUDENTS);
+    const body = `
+      <form id="parentAccForm">
+        <div class="form-group">
+          <label class="form-label">Student</label>
+          <select class="form-control" id="paStudent" required>
+            ${students.map(s => `<option value="${s.id}">${s.name} (${s.admissionNo || ""})</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Parent Mobile</label>
+            <input class="form-control" id="paPhone" placeholder="0300-1234567" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">4-digit PIN</label>
+            <input class="form-control" id="paPin" inputmode="numeric" maxlength="6" placeholder="1234" required>
+          </div>
+        </div>
+      </form>`;
+    const footer = `
+      <button class="btn btn-secondary" onclick="window.schoolApp.closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="btnSaveParentAcc">Create Account</button>`;
+    this.openModal("Create Parent Portal Account", body, footer);
+    document.getElementById("btnSaveParentAcc")?.addEventListener("click", async () => {
+      const { createParentAccount } = await import("./parent-portal.js");
+      const studentId = document.getElementById("paStudent").value;
+      const parentPhone = document.getElementById("paPhone").value.trim();
+      const pin = document.getElementById("paPin").value.trim();
+      if (!parentPhone || !pin) {
+        this.showToast("Phone and PIN are required.", "error");
+        return;
+      }
+      createParentAccount({ studentId, parentPhone, pin });
+      this.showToast("Parent account created.", "success");
+      this.closeModal();
+      this.refreshCurrentView();
+    });
+  }
 
     // Smooth scrolling for internal anchor links
     document.querySelectorAll('#publicLandingPage a[href^="#"]').forEach(anchor => {
