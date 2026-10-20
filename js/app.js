@@ -82,7 +82,13 @@ class SchoolApp {
     }
 
     // 3. Try initializing Firebase sync if configured
-    syncManager.initialize();
+    syncManager.initialize().then(() => {
+      // v3.0 — background two-way sync: pull latest from RTDB, push local changes
+      // Non-blocking: UI already rendered above.
+      if (navigator.onLine) {
+        syncManager.fullSync().catch(e => console.warn("Background sync failed:", e.message));
+      }
+    });
 
     // 3b. v3.0 — PWA: service worker + install prompt (non-blocking)
     installPromptHandler();
@@ -314,7 +320,7 @@ class SchoolApp {
     if (quickSyncBtn) {
       quickSyncBtn.addEventListener("click", async () => {
         this.showToast("Initiating Firebase sync...", "info");
-        await syncManager.syncPendingQueue();
+        await syncManager.fullSync();
       });
     }
 

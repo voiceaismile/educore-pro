@@ -219,6 +219,97 @@ class FirebaseSyncManager {
   }
 
   /**
+   * v3.0 — PULL latest data from Firebase RTDB into local IndexedDB.
+   * RTDB is the source of truth: every store is refreshed with the
+   * latest cloud data. Runs silently in background on boot.
+   * Skipped when offline or RTDB not configured.
+   */
+  async pullFromRTDB() {
+    if (!this.isOnline) return { success: false, reason: "offline" };
+
+    if (!this.isInitialized) {
+      const ok = await this.initialize();
+      if (!ok) return { success: false, reason: "unconfigured" };
+    }
+
+    if (!this.rtdb) return { success: false, reason: "rtdb-disabled" };
+
+    const sdk = await this.getFirebaseSdk();
+    if (!sdk) return { success: false, reason: "sdk-unavailable" };
+
+    // All data stores (skip sync queue itself and users for safety)
+    const SKIP = new Set([STORES.SYNC_QUEUE, STORES.USERS]);
+    const storeNames = Object.values(STORES).filter(s => !SKIP.has(s));
+
+    let pulledCount = 0;
+    const pulledStores = [];
+
+    for (const storeName of storeNames) {
+      try {
+        const snap = await sdk.get(sdk.child(sdk.ref(this.rtdb), storeName));
+        if (!snap.exists()) continue;
+        const data = snap.val();
+        if (!data || typeof data !== "object") continue;
+
+        const records = Object.values(data).filter(r => r && r.id);
+        for (const rec of records) {
+          // Upsert: RTDB wins (latest information). queueSync=false
+          // so pulled data isn't re-queued for push.
+          await db.update(storeName, rec, false);
+          pulledCount++;
+        }
+        pulledStores.push(storeName);
+      } catch (e) {
+        console.warn(`RTDB pull failed for ${storeName}:`, e.message);
+      }
+    }
+
+    this.lastSyncTime = new Date().toLocaleTimeString();
+    localStorage.setItem("educore_last_sync_time", this.lastSyncTime);
+    return { success: true, count: pulledCount, stores: pulledStores };
+  }
+
+  /**
+   * v3.0 — Full two-way sync: PULL latest from RTDB first,
+   * then PUSH local pending changes. Best of both worlds.
+   */
+  async fullSync() {
+    if (!this.isOnline) {
+      this.notifyStatus("offline", "Device is offline. Changes remain safely in local IndexedDB.");
+      return { success: false, reason: "offline" };
+    }
+    if (this.isSyncing) return { success: true, message: "Sync already in progress" };
+
+    this.isSyncing = true;
+    this.notifyStatus("syncing", "Syncing with Firebase (fetching latest + uploading changes)...");
+
+    try {
+      // 1. PULL latest from RTDB (source of truth)
+      const pull = await this.pullFromRTDB();
+
+      // 2. PUSH local pending changes
+      this.isSyncing = false; // allow syncPendingQueue to run
+      const push = await this.syncPendingQueue();
+
+      const msg = `Up to date — ${pull.count || 0} records fetched, ${push.count || 0} uploaded.`;
+      this.notifyStatus("synced", msg);
+      // Refresh UI so latest data shows immediately
+      window.dispatchEvent(new CustomEvent("dbChanged"));
+      return { success: true, pull, push };
+    } catch (err) {
+      console.error("Full sync error:", err);
+      this.notifyStatus("error", `Sync failed: ${err.message}`);
+      return { success: false, error: err.message };
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  /**
    * Complete Snapshot Cloud Backup:
    * Writes the complete database snapshot to Firestore & Realtime Database
    */
