@@ -253,12 +253,20 @@ class FirebaseSyncManager {
           : [];
         const rtdbIds = new Set(records.map(r => r.id));
 
-        // v3.4 — Mirror: delete local records that no longer exist in RTDB
-        // (so deleted/junk data doesn't linger in IndexedDB)
+        // v3.4 — Mirror: delete local records that no longer exist in RTDB,
+        // BUT preserve records with pending sync queue entries (offline-created
+        // data that hasn't been pushed yet — deleting those would lose data).
         try {
+          const queueItems = await db.getAll(STORES.SYNC_QUEUE);
+          const pendingIds = new Set();
+          for (const q of (queueItems || [])) {
+            if (q && q.collection === storeName && q.data && q.data.id) {
+              pendingIds.add(q.data.id);
+            }
+          }
           const localRecs = await db.getAll(storeName);
           for (const lr of (localRecs || [])) {
-            if (lr && lr.id && !rtdbIds.has(lr.id)) {
+            if (lr && lr.id && !rtdbIds.has(lr.id) && !pendingIds.has(lr.id)) {
               await db.delete(storeName, lr.id, false);
             }
           }
