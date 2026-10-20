@@ -2712,3 +2712,400 @@ body.system-license-locked {
   gap: 14px;
 }
 
+
+/* ==========================================================================
+   v2.2 — FULL RESPONSIVE (mobile + tablet + desktop)
+   Tablet <=1024px | Mobile <=768px | Small phone <=480px
+   Desktop layout untouched above these breakpoints.
+   ========================================================================== */
+
+/* --- Global safety: never allow horizontal page scroll --- */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+img, table, iframe {
+  max-width: 100%;
+}
+
+/* --- 1. Sidebar drawer backdrop (works with existing 1024px drawer) --- */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 45;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.sidebar-backdrop.visible {
+  opacity: 1;
+  visibility: visible;
+}
+@media (max-width: 1024px) {
+  .sidebar.mobile-open {
+    z-index: 46;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* --- 2. Tables: guaranteed horizontal scroll on mobile --- */
+.table-container {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+@media (max-width: 768px) {
+  .custom-table {
+    min-width: 680px; /* forces scroll instead of crushing columns */
+  }
+  .custom-table th,
+  .custom-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .table-user-cell {
+    gap: 8px;
+  }
+}
+
+/* --- 3. Landing page nav hamburger --- */
+.landing-menu-toggle {
+  display: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  font-size: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .landing-menu-toggle {
+    display: inline-flex;
+  }
+  .landing-nav {
+    position: sticky;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+  .landing-nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: rgba(10, 15, 28, 0.98);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 0;
+    z-index: 1000;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  }
+  .landing-nav-links.open {
+    display: flex;
+  }
+  .landing-nav-links li {
+    width: 100%;
+  }
+  .landing-nav-links a {
+    display: block;
+    padding: 14px 24px;
+    font-size: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .landing-nav-links a:active {
+    background: rgba(79, 70, 229, 0.15);
+  }
+  .landing-brand-text h2 {
+    font-size: 16px;
+  }
+  .landing-brand-text span {
+    display: none;
+  }
+  .btn-portal-login span {
+    display: none;
+  }
+  .btn-portal-login {
+    padding: 10px 14px;
+  }
+}
+
+/* --- 4. Landing hero / sections scale down --- */
+@media (max-width: 768px) {
+  .landing-hero {
+    padding: 52px 20px 36px 20px;
+  }
+  .hero-title {
+    font-size: 30px;
+    line-height: 1.2;
+  }
+  .hero-subtext {
+    font-size: 15px;
+    margin-bottom: 28px;
+  }
+  .hero-cta-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .hero-btn-primary,
+  .hero-btn-secondary {
+    justify-content: center;
+    width: 100%;
+  }
+  .landing-section {
+    padding: 44px 20px;
+  }
+  .programs-grid,
+  .faculty-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .program-card,
+  .faculty-card {
+    padding: 20px;
+  }
+  .landing-footer {
+    padding: 32px 20px;
+  }
+  .admin-landing-topbar {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    padding: 12px;
+  }
+}
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 25px;
+  }
+  .hero-pill-badge {
+    font-size: 11px;
+    padding: 6px 14px;
+  }
+  .landing-hero {
+    padding: 40px 16px 28px 16px;
+  }
+  .landing-nav {
+    padding: 12px 16px;
+  }
+}
+
+/* --- 5. Modals: near-full-screen bottom sheet on mobile --- */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-window {
+    max-width: 100%;
+    width: 100%;
+    max-height: 94vh;
+    max-height: 94dvh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+  }
+  .modal-header {
+    padding: 16px 18px;
+    position: sticky;
+    top: 0;
+    background: var(--bg-elevated);
+    z-index: 2;
+  }
+  .modal-title {
+    font-size: 16px;
+  }
+  .modal-close-btn {
+    font-size: 22px;
+    padding: 8px;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-body {
+    padding: 18px;
+  }
+  .modal-footer {
+    padding: 14px 18px;
+    flex-wrap: wrap;
+  }
+  .modal-footer .btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+  /* Auth modal (login) */
+  .auth-wrapper {
+    padding: 12px;
+    align-items: flex-end;
+  }
+  .auth-card {
+    padding: 28px 22px;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 94vh;
+    max-height: 94dvh;
+    overflow-y: auto;
+  }
+}
+
+/* --- 6. Settings tabs: smooth horizontal scroll pills --- */
+.settings-nav-tabs {
+  -webkit-overflow-scrolling: touch;
+}
+.settings-tab-btn {
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .settings-tab-btn {
+    padding: 10px 14px;
+    font-size: 12.5px;
+  }
+  .cms-top-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cms-section-card {
+    padding: 16px;
+  }
+}
+
+/* --- 7. Top app header compression --- */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .header-left {
+    gap: 8px;
+    min-width: 0;
+  }
+  .header-right {
+    gap: 8px;
+  }
+  .user-details {
+    display: none;
+  }
+  .user-profile-widget {
+    padding: 4px;
+    gap: 0;
+  }
+  .system-badge-pill {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+  .system-badge-pill span:last-child {
+    display: none; /* keep status dot only */
+  }
+  .menu-toggle-btn {
+    font-size: 18px;
+    padding: 8px;
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+@media (max-width: 480px) {
+  .system-badge-pill {
+    display: none;
+  }
+  .icon-action-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* --- 8. Page headers, cards, dashboard grids --- */
+@media (max-width: 768px) {
+  .content-body {
+    padding: 16px 12px;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 20px;
+  }
+  .page-title-group h1 {
+    font-size: 22px;
+  }
+  .page-actions-group {
+    flex-wrap: wrap;
+  }
+  .page-actions-group .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 42px;
+  }
+  .card {
+    padding: 16px;
+  }
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+/* stats-grid: 640px rule already forces 1 column; add a 2-col step for larger phones */
+@media (max-width: 768px) and (min-width: 641px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+/* --- 9. Forms stack & touch targets --- */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .form-control,
+  .form-select,
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="tel"],
+  select,
+  textarea {
+    font-size: 16px; /* prevents iOS auto-zoom on focus */
+    min-height: 44px;
+  }
+  .btn {
+    min-height: 42px;
+  }
+  .btn-sm {
+    min-height: 38px;
+  }
+}
+
+/* --- 10. Defaulter / verification summary blocks wrap cleanly --- */
+@media (max-width: 768px) {
+  .defaulter-summary-list,
+  .verification-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  code {
+    word-break: break-all;
+  }
+}
+
+/* --- 11. Print styles must not inherit mobile layout --- */
+@media print {
+  .sidebar-backdrop {
+    display: none !important;
+  }
+}

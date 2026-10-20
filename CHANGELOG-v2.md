@@ -55,3 +55,28 @@ Asli workflow: parent fee school ke JazzCash/EasyPaisa number par bhejta hai -> 
 - js/whatsapp.js (feeReminderMessage payment append)
 - js/app.js (import + settings tab + payment form + fees view + verification queue + modals + challan print)
 - package.json (3.6.0 -> 3.7.0)
+
+## v2.2 — Full Mobile + Desktop Responsive (2026-10-20)
+
+**Sidebar drawer**: below 1024px the sidebar is off-canvas; hamburger toggles it with a
+backdrop overlay (tap outside / Escape / nav tap closes it; auto-resets on desktop resize).
+
+**Tables**: `.custom-table` gets `min-width: 680px` + horizontal scroll on mobile — fee,
+verification, and all data tables stay usable instead of crushing columns.
+
+**Landing page**: hamburger menu (dropdown panel) below 768px; hero text scales
+(30px → 25px); CTA buttons stack full-width; programs/faculty grids → single column;
+footer and topbar compress.
+
+**Modals**: bottom-sheet style on mobile (full-width, 94vh, sticky header, 44px touch
+targets); auth card same treatment.
+
+**Settings tabs**: horizontally scrollable pills with momentum scrolling.
+
+**Top bar**: search hidden (existing), user name hidden, sync pill collapses to dot,
+avatar stays; tighter padding.
+
+**Forms**: single column, 16px inputs (no iOS auto-zoom), 42px+ touch targets.
+
+**Safety**: `overflow-x: hidden` on html/body; print styles unaffected.
+Desktop layout above breakpoints is untouched.

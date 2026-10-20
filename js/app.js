@@ -197,14 +197,47 @@ class SchoolApp {
       }
     }
 
-    // Sidebar mobile toggle
+    // Sidebar mobile toggle (v2.2: drawer + backdrop + auto-close)
     const menuToggle = document.getElementById("menuToggleBtn");
     const sidebar = document.getElementById("sidebar");
+    let sidebarBackdrop = document.getElementById("sidebarBackdrop");
+    if (!sidebarBackdrop) {
+      sidebarBackdrop = document.createElement("div");
+      sidebarBackdrop.id = "sidebarBackdrop";
+      sidebarBackdrop.className = "sidebar-backdrop";
+      sidebarBackdrop.setAttribute("aria-hidden", "true");
+      document.body.appendChild(sidebarBackdrop);
+    }
+    const closeSidebarDrawer = () => {
+      sidebar?.classList.remove("mobile-open");
+      sidebarBackdrop.classList.remove("visible");
+    };
+    const syncSidebarBackdrop = () => {
+      // wait a tick so the class toggle above has applied
+      requestAnimationFrame(() => {
+        sidebarBackdrop.classList.toggle("visible", !!sidebar?.classList.contains("mobile-open"));
+      });
+    };
     if (menuToggle && sidebar) {
       menuToggle.addEventListener("click", () => {
         sidebar.classList.toggle("mobile-open");
+        syncSidebarBackdrop();
       });
     }
+    sidebarBackdrop.addEventListener("click", closeSidebarDrawer);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeSidebarDrawer();
+    });
+    // Auto-close drawer after tapping a nav item (mobile/tablet only)
+    document.getElementById("sidebarNavMenu")?.addEventListener("click", (e) => {
+      if (e.target.closest(".nav-item") && window.innerWidth <= 1024) {
+        closeSidebarDrawer();
+      }
+    });
+    // If resized to desktop while drawer open, reset state
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 1024) closeSidebarDrawer();
+    });
 
     // Manual Quick Sync button
     const quickSyncBtn = document.getElementById("btnQuickSync");
@@ -4855,6 +4888,10 @@ export function saveAppConfig(newConfig) {
           <li><a href="#contact">Contact</a></li>
         </ul>
 
+        <button class="landing-menu-toggle" id="landingMenuToggle" aria-label="Open menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
         <div class="landing-nav-actions">
           <button class="btn-portal-login" id="btnLandingSignIn">
             <i class="fa-solid fa-right-to-bracket"></i>
@@ -5196,6 +5233,38 @@ export function saveAppConfig(newConfig) {
 
     document.getElementById("btnLandingSignIn")?.addEventListener("click", handleLoginClick);
     document.getElementById("heroPortalBtn")?.addEventListener("click", handleLoginClick);
+
+    // v2.2 — Landing mobile nav hamburger
+    const landingMenuBtn = document.getElementById("landingMenuToggle");
+    const landingNavLinks = document.querySelector("#publicLandingPage .landing-nav-links");
+    landingMenuBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = landingNavLinks?.classList.toggle("open");
+      landingMenuBtn.innerHTML = isOpen
+        ? '<i class="fa-solid fa-xmark"></i>'
+        : '<i class="fa-solid fa-bars"></i>';
+    });
+    // Close mobile menu when a link is tapped
+    landingNavLinks?.querySelectorAll("a").forEach(a => {
+      a.addEventListener("click", () => {
+        landingNavLinks.classList.remove("open");
+        if (landingMenuBtn) landingMenuBtn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+      });
+    });
+    // Close mobile menu when tapping outside (guard: bind only once)
+    if (!document.body.dataset.landingOutsideClickBound) {
+      document.body.dataset.landingOutsideClickBound = "1";
+      document.addEventListener("click", (e) => {
+        const links = document.querySelector("#publicLandingPage .landing-nav-links");
+        const btn = document.getElementById("landingMenuToggle");
+        if (links?.classList.contains("open") &&
+            !e.target.closest(".landing-nav-links") &&
+            !e.target.closest("#landingMenuToggle")) {
+          links.classList.remove("open");
+          if (btn) btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+        }
+      });
+    }
 
     // Online Admission Form Submit Handler
     document.getElementById("formPublicAdmissionInquiry")?.addEventListener("submit", async (e) => {
