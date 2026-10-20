@@ -11,6 +11,7 @@ import { auth } from "./auth.js";
 import { syncManager } from "./firebase-sync.js";
 import { uploadImageToImgbb } from "./imgbb.js";
 import { licenseManager } from "./license.js";
+import { normalizePakPhone, waLink, daysOverdue, feeReminderMessage, resultShareMessage, defaulterSummaryText } from "./whatsapp.js";
 
 class SchoolApp {
   constructor() {
@@ -1140,6 +1141,13 @@ class SchoolApp {
   async renderFeesView() {
     const fees = await db.getAll(STORES.FEES);
     const students = await db.getAll(STORES.STUDENTS);
+    const studentMap = {};
+    students.forEach(s => { studentMap[s.id] = s; });
+
+    // v2.0 — defaulter stats
+    const pending = fees.filter(f => f.status === "pending");
+    const overdue = pending.filter(f => daysOverdue(f.dueDate) > 0);
+    const pendingTotal = pending.reduce((s, f) => s + Number(f.amount || 0), 0);
 
     return `
       <div class="page-header">
@@ -1148,11 +1156,25 @@ class SchoolApp {
           <p>Invoice generation, fee collection tracking, and printable official receipts.</p>
         </div>
         <div class="page-actions-group">
+          <button class="btn btn-success" id="btnRemindAllDefaulters" title="Open WhatsApp reminders for all pending fees">
+            <i class="fa-brands fa-whatsapp"></i> Remind All Defaulters${pending.length ? ` (${pending.length})` : ""}
+          </button>
           <button class="btn btn-primary" id="btnCreateFeeInvoice">
             <i class="fa-solid fa-file-invoice"></i> Issue Invoice
           </button>
         </div>
       </div>
+
+      ${pending.length ? `
+      <div class="card" style="border-left:4px solid #f59e0b; margin-bottom:16px;">
+        <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap; padding:4px 8px;">
+          <div><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i>
+            <strong>${pending.length}</strong> pending invoices</div>
+          <div><strong>${this.config.currency}${pendingTotal.toLocaleString()}</strong> total outstanding</div>
+          <div><strong>${overdue.length}</strong> overdue</div>
+          <span style="color:#64748b; font-size:0.9em;">v2.0 — WhatsApp reminders enabled</span>
+        </div>
+      </div>` : ""}
 
       <div class="card">
         <div class="table-container">
@@ -1186,6 +1208,9 @@ class SchoolApp {
                       ${f.status === 'pending' ? `
                         <button class="btn btn-success btn-sm btn-mark-fee-paid" data-id="${f.id}">
                           <i class="fa-solid fa-check"></i> Collect
+                        </button>
+                        <button class="icon-action-btn btn-wa-remind" data-id="${f.id}" title="Send WhatsApp fee reminder to parent" style="color:#25D366;">
+                          <i class="fa-brands fa-whatsapp"></i>
                         </button>
                       ` : ''}
                       <button class="icon-action-btn btn-print-receipt" data-id="${f.id}" title="Print Official Receipt">
@@ -1235,6 +1260,68 @@ class SchoolApp {
         this.showFeeCertificateModal(id);
       });
     });
+
+    // v2.0 — WhatsApp fee reminders
+    document.querySelectorAll(".btn-wa-remind").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        const fee = await db.getById(STORES.FEES, id);
+        if (!fee) return;
+        const student = await db.getById(STORES.STUDENTS, fee.studentId);
+        const phone = student ? (student.phone || student.parentPhone) : null;
+        const msg = feeReminderMessage(fee.studentName, fee, this.config, 1);
+        const link = waLink(phone, msg);
+        if (!link) {
+          this.showToast("Parent mobile number missing for this student.", "error");
+          return;
+        }
+        window.open(link, "_blank");
+      });
+    });
+
+    document.getElementById("btnRemindAllDefaulters")?.addEventListener("click", async () => {
+      const fees = await db.getAll(STORES.FEES);
+      const pending = fees.filter(f => f.status === "pending");
+      if (!pending.length) {
+        this.showToast("No pending fees — all clear!", "success");
+        return;
+      }
+      // Build a chooser list: one WhatsApp link per defaulter
+      const students = await db.getAll(STORES.STUDENTS);
+      const studentMap = {};
+      students.forEach(s => { studentMap[s.id] = s; });
+      const rows = pending.map(f => {
+        const st = studentMap[f.studentId];
+        const phone = st ? (st.phone || st.parentPhone) : null;
+        const link = waLink(phone, feeReminderMessage(f.studentName, f, this.config, 1));
+        const od = daysOverdue(f.dueDate);
+        return `<div style="display:flex; align-items:center; justify-content:space-between; padding:10px 4px; border-bottom:1px solid #eef2f7;">
+          <div>
+            <strong>${f.studentName}</strong>
+            <span style="color:#64748b;"> — ${this.config.currency}${Number(f.amount).toLocaleString()}${od ? ` · <span style="color:#dc2626;">${od}d overdue</span>` : ""}</span>
+          </div>
+          ${link
+            ? `<a class="btn btn-success btn-sm" href="${link}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Remind</a>`
+            : `<span class="badge badge-warning">No number</span>`}
+        </div>`;
+      }).join("");
+      const summary = defaulterSummaryText(pending, this.config);
+      this.openModal(
+        `Fee Defaulters — WhatsApp Reminders (${pending.length})`,
+        `<p style="color:#64748b; margin-bottom:12px;">Click <strong>Remind</strong> to open WhatsApp with a pre-filled polite reminder for each parent.</p>
+         <div style="max-height:380px; overflow-y:auto;">${rows}</div>`,
+        `<button class="btn btn-secondary" id="btnCopyDefaulterSummary">Copy Summary</button>
+         <button class="btn btn-secondary" onclick="window.schoolApp.closeModal()">Close</button>`
+      );
+      document.getElementById("btnCopyDefaulterSummary")?.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(summary);
+          this.showToast("Defaulter summary copied!", "success");
+        } catch (e) {
+          this.showToast("Copy failed — select the text manually.", "error");
+        }
+      });
+    });
   }
 
   // =========================================================================
@@ -1280,6 +1367,9 @@ class SchoolApp {
                   <td><span class="badge badge-success">${g.grade}</span></td>
                   <td style="font-size:12.5px; color:var(--text-muted);">${g.remarks || '—'}</td>
                   <td style="text-align:right;">
+                    <button class="icon-action-btn btn-wa-result" data-id="${g.id}" title="Share result on WhatsApp with parent" style="color:#25D366;">
+                      <i class="fa-brands fa-whatsapp"></i>
+                    </button>
                     <button class="icon-action-btn btn-print-scholar-report" data-id="${g.studentId}" title="Print Official Academic Transcript">
                       <i class="fa-solid fa-print"></i>
                     </button>
@@ -1300,6 +1390,23 @@ class SchoolApp {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
         this.showReportCardModal(id);
+      });
+    });
+
+    // v2.0 — WhatsApp result sharing
+    document.querySelectorAll(".btn-wa-result").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        const grade = await db.getById(STORES.GRADES, id);
+        if (!grade) return;
+        const student = await db.getById(STORES.STUDENTS, grade.studentId);
+        const phone = student ? (student.phone || student.parentPhone) : null;
+        const link = waLink(phone, resultShareMessage(grade.studentName, grade, this.config));
+        if (!link) {
+          this.showToast("Parent mobile number missing for this student.", "error");
+          return;
+        }
+        window.open(link, "_blank");
       });
     });
   }
