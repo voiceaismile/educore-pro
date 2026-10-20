@@ -377,7 +377,11 @@ class SchoolApp {
 
     // Render Navigation Menu Items
     const navMenu = document.getElementById("sidebarNavMenu");
-    if (!navMenu) return;
+    if (!navMenu) {
+      console.error("EDUCORE-DEBUG: sidebarNavMenu element not found in DOM");
+      return;
+    }
+    try {
 
     let items = [];
 
@@ -462,6 +466,7 @@ class SchoolApp {
     `;
 
     navMenu.innerHTML = menuHtml;
+    console.log("EDUCORE-DEBUG: sidebar rendered with", items.length, "items for role", user.role);
 
     // Attach click events
     navMenu.querySelectorAll(".nav-item[data-view]").forEach(btn => {
@@ -470,6 +475,9 @@ class SchoolApp {
         this.navigateTo(viewId);
       });
     });
+    } catch (navErr) {
+      console.error("EDUCORE-DEBUG: sidebar render failed:", navErr.message);
+    }
 
     const logoutBtn = document.getElementById("btnLogoutNav");
     if (logoutBtn) {
