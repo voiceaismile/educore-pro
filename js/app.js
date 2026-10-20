@@ -29,27 +29,19 @@ class SchoolApp {
   async init() {
     this.applyThemeAndBranding();
     this.bindGlobalEvents();
-    
-    // 1. Strict Software License Verification from private RTDB (licensekeysc)
-    const isLicensed = await licenseManager.init(this.config);
-    if (!isLicensed) {
-      console.warn("School Management System locked: Valid commercial license required from licensekeysc RTDB.");
-      return;
-    }
 
-    if (licenseManager.licenseData?.schoolName && (!this.config.schoolName || this.config.schoolName === "School Management System")) {
-      this.config.schoolName = licenseManager.licenseData.schoolName;
-      this.config.schoolShortName = licenseManager.licenseData.schoolName;
-      saveAppConfig({ schoolName: licenseManager.licenseData.schoolName, schoolShortName: licenseManager.licenseData.schoolName });
-      this.applyThemeAndBranding();
-    }
+    // v2.1.1 — Fast boot: render UI FIRST, license check runs in background.
+    // The public landing page never waits on the license server.
 
-    // 2. Initialize Database & fetch remote landing page config if online
+    // 1. Initialize Database & fetch remote landing page config if online
     await db.init();
     try {
       const fbUrl = this.config.firebase?.databaseURL;
       if (fbUrl) {
-        const resp = await fetch(`${fbUrl}/school_config.json`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const resp = await fetch(`${fbUrl}/school_config.json`, { signal: controller.signal });
+        clearTimeout(timeout);
         if (resp.ok) {
           const remoteConfig = await resp.json();
           if (remoteConfig) {
@@ -61,8 +53,8 @@ class SchoolApp {
     } catch (e) {
       // offline fallback automatic
     }
-    
-    // 3. Check Authentication & Initial View
+
+    // 2. Check Authentication & Initial View — renders IMMEDIATELY
     const user = auth.getCurrentUser();
     if (!user) {
       this.renderPublicLandingPage();
@@ -70,8 +62,47 @@ class SchoolApp {
       this.switchToPortal("dashboard");
     }
 
-    // 4. Try initializing Firebase sync if configured
+    // 3. Try initializing Firebase sync if configured
     syncManager.initialize();
+
+    // 4. License verification runs in BACKGROUND (non-blocking).
+    // Portal features remain gated: switchToPortal re-checks license.
+    this.checkLicenseInBackground();
+  }
+
+  /**
+   * v2.1.1 — Background license check with timeout.
+   * Never blocks the landing page. If unlicensed, the portal login
+   * will show the activation prompt when the user tries to sign in.
+   */
+  async checkLicenseInBackground() {
+    try {
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("timeout"), 15000));
+      const checkPromise = licenseManager.init(this.config).then(
+        (ok) => (ok ? "licensed" : "unlicensed"),
+        () => "unlicensed"
+      );
+      const result = await Promise.race([checkPromise, timeoutPromise]);
+
+      if (result === "licensed" && licenseManager.licenseData?.schoolName &&
+          (!this.config.schoolName || this.config.schoolName === "School Management System")) {
+        this.config.schoolName = licenseManager.licenseData.schoolName;
+        this.config.schoolShortName = licenseManager.licenseData.schoolName;
+        saveAppConfig({ schoolName: licenseManager.licenseData.schoolName, schoolShortName: licenseManager.licenseData.schoolName });
+        this.applyThemeAndBranding();
+      }
+
+      if (result !== "licensed") {
+        console.warn("School Management System: license not verified (background check). Portal access will require activation.");
+        // Mark for portal gate — do NOT lock the landing page
+        this.licenseVerified = false;
+      } else {
+        this.licenseVerified = true;
+      }
+    } catch (e) {
+      console.warn("Background license check failed:", e);
+      this.licenseVerified = false;
+    }
   }
 
   // --- Branding & Dynamic Theme ---
@@ -351,6 +382,11 @@ class SchoolApp {
 
   // --- Switch between Landing Page and Portal ---
   switchToPortal(viewId = "dashboard") {
+    // v2.1.1 — Portal stays license-gated even though boot no longer blocks on it
+    if (!licenseManager.isValid && this.licenseVerified !== true) {
+      licenseManager.showLockScreen("A valid commercial license is required to access the School Management Portal.");
+      return;
+    }
     const landing = document.getElementById("publicLandingPage");
     const appEl = document.getElementById("app");
     if (landing) landing.style.display = "none";
