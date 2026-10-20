@@ -191,6 +191,7 @@ class SchoolApp {
     // License activated
     window.addEventListener("licenseActivated", async (e) => {
       this.showToast("Software License Activated & Verified!", "success");
+      this.updateLicenseBanner();
       if (e.detail?.data?.schoolName) {
         this.config.schoolName = e.detail.data.schoolName;
         this.config.schoolShortName = e.detail.data.schoolName;
@@ -510,13 +511,39 @@ class SchoolApp {
     this.refreshCurrentView();
   }
 
-  // --- Switch between Landing Page and Portal ---
-  switchToPortal(viewId = "dashboard") {
-    // v2.1.1 — Portal stays license-gated even though boot no longer blocks on it
-    if (!licenseManager.isValid && this.licenseVerified !== true) {
-      licenseManager.showLockScreen("A valid commercial license is required to access the School Management Portal.");
+  /**
+   * v3.1 — Top banner when the school has no verified license.
+   * Non-blocking: portal stays usable, banner links to the license modal.
+   */
+  updateLicenseBanner() {
+    const existing = document.getElementById("licenseTopBanner");
+    const licensed = licenseManager.isValid === true;
+    if (licensed) {
+      existing?.remove();
       return;
     }
+    if (existing) return; // already shown
+    const main = document.getElementById("mainContentArea");
+    if (!main) return;
+    const banner = document.createElement("div");
+    banner.id = "licenseTopBanner";
+    banner.className = "license-top-banner";
+    banner.innerHTML = `
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span><strong>License not verified.</strong> Please verify your license to activate all features.</span>
+      <button type="button" class="license-banner-btn" id="btnVerifyLicenseBanner">
+        <i class="fa-solid fa-key"></i> Verify License
+      </button>
+    `;
+    main.prepend(banner);
+    document.getElementById("btnVerifyLicenseBanner")?.addEventListener("click", () => {
+      licenseManager.showAsModal();
+    });
+  }
+
+  // --- Switch between Landing Page and Portal ---
+  switchToPortal(viewId = "dashboard") {
+    // v3.1 — No blocking license dialog. Unlicensed schools see a top banner instead.
     const landing = document.getElementById("publicLandingPage");
     const appEl = document.getElementById("app");
     if (landing) landing.style.display = "none";
@@ -532,10 +559,7 @@ class SchoolApp {
   }
 
   navigateTo(viewId) {
-    if (!licenseManager.isValid) {
-      licenseManager.showLockScreen("A valid commercial license is required to access the School Management System.");
-      return;
-    }
+    // v3.1 — License no longer blocks navigation; banner shows when unlicensed.
     // v3.0 — role-based access: deny views the user's role may not open
     try {
       const user = auth.getCurrentUser();
@@ -571,10 +595,8 @@ class SchoolApp {
   }
 
   async refreshCurrentView() {
-    if (!licenseManager.isValid) {
-      licenseManager.showLockScreen("A valid commercial license is required to access the School Management System.");
-      return;
-    }
+    // v3.1 — License no longer blocks views; banner shows when unlicensed.
+    this.updateLicenseBanner();
     const user = auth.getCurrentUser();
     if (!user) return;
 

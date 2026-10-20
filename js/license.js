@@ -553,6 +553,43 @@ class LicenseManager {
   }
 
   /**
+   * v3.1 — Show license form as a DISMISSIBLE modal (not a full lock).
+   * Used when the user clicks "Verify License" on the top banner.
+   */
+  showAsModal() {
+    this.injectLockOverlay();
+    const overlay = document.getElementById("licenseLockOverlay");
+    const modal = document.getElementById("licenseLockModal");
+    if (!overlay || !modal) return;
+
+    // Add close button if not present
+    if (!document.getElementById("licenseModalClose")) {
+      const closeBtn = document.createElement("button");
+      closeBtn.id = "licenseModalClose";
+      closeBtn.type = "button";
+      closeBtn.className = "license-modal-close";
+      closeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+      closeBtn.setAttribute("aria-label", "Close");
+      closeBtn.addEventListener("click", () => this.hideLockScreen());
+      modal.style.position = "relative";
+      modal.appendChild(closeBtn);
+    }
+
+    // Make overlay non-blocking (click outside to close)
+    overlay.style.display = "flex";
+    overlay.style.background = "rgba(15, 23, 42, 0.55)";
+    document.body.classList.remove("system-license-locked");
+
+    // Click outside modal closes it
+    overlay.onclick = (e) => {
+      if (e.target === overlay) this.hideLockScreen();
+    };
+
+    const inputField = document.getElementById("licenseKeyInputField");
+    if (inputField) inputField.focus();
+  }
+
+  /**
    * Reset / change license key
    */
   async deactivateLicense() {
