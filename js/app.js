@@ -64,6 +64,36 @@ class SchoolApp {
 
     // 1. Initialize Database & fetch remote landing page config if online
     await db.init();
+
+    // v4.1 DEMO MODE — Seed from RTDB if local DB is empty (first boot)
+    // Simple, reliable, no complex sync needed for demo.
+    try {
+      const existingStudents = await db.getAll(STORES.STUDENTS);
+      if (!existingStudents || existingStudents.length === 0) {
+        const fbUrl = this.config.firebase?.databaseURL;
+        if (fbUrl && navigator.onLine) {
+          console.log("EduPro: Seeding demo data from cloud...");
+          for (const storeName of [STORES.STUDENTS, STORES.TEACHERS, STORES.FEES, STORES.NOTICES, STORES.CLASSES]) {
+            try {
+              const resp = await fetch(`${fbUrl}/${storeName}.json`);
+              if (resp.ok) {
+                const data = await resp.json();
+                if (data && typeof data === "object") {
+                  for (const rec of Object.values(data)) {
+                    if (rec && rec.id) {
+                      await db.update(storeName, rec, false);
+                    }
+                  }
+                }
+              }
+            } catch (e) {}
+          }
+          console.log("EduPro: Demo data seeded.");
+        }
+      }
+    } catch (e) {
+      console.warn("Demo seeding failed:", e.message);
+    }
     try {
       const fbUrl = this.config.firebase?.databaseURL;
       if (fbUrl) {
@@ -91,23 +121,18 @@ class SchoolApp {
       this.switchToPortal("dashboard");
     }
 
-    // 3. Try initializing Firebase sync if configured
-    syncManager.initialize().then(() => {
-      // v3.0 — background two-way sync: pull latest from RTDB, push local changes
-      // Non-blocking: UI already rendered above.
-      if (navigator.onLine) {
-        syncManager.fullSync().catch(e => console.warn("Background sync failed:", e.message));
-      }
-    });
+    // 3. v4.1 DEMO MODE — Auto-sync on boot DISABLED for reliability.
+    // Data loads directly; manual sync available via the sync button.
+    // syncManager.initialize() is called on-demand by the sync button.
 
     // 3b. v3.0 — PWA: service worker + install prompt (non-blocking)
     installPromptHandler();
     registerServiceWorker();
     window.addEventListener("pwaInstallable", () => this.maybeShowInstallBanner());
 
-    // 4. License verification runs in BACKGROUND (non-blocking).
-    // Portal features remain gated: switchToPortal re-checks license.
-    this.checkLicenseInBackground();
+    // 4. v4.1 DEMO MODE — License check DISABLED for reliable demo.
+    // The demo is always licensed; no background verification needed.
+    this.licenseVerified = true;
   }
 
   /**
@@ -511,6 +536,9 @@ class SchoolApp {
    * Non-blocking: portal stays usable, banner links to the license modal.
    */
   updateLicenseBanner() {
+    // v4.1 DEMO MODE — No license banner; demo is always licensed.
+    document.getElementById("licenseTopBanner")?.remove();
+    return;
     const existing = document.getElementById("licenseTopBanner");
     const licensed = licenseManager.isValid === true;
     if (licensed) {
