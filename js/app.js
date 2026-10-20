@@ -2305,7 +2305,7 @@ class SchoolApp {
               </div>
             </div>
             <div style="display:flex; gap:10px; margin-top:20px;">
-              <button type="submit" class="btn btn-primary" style="flex:1;">
+              <button type="button" class="btn btn-primary" id="btnSaveBranding" style="flex:1;">
                 <i class="fa-solid fa-floppy-disk"></i> Save Branding
               </button>
               <button type="button" class="btn btn-secondary" id="btnExportConfigFile">
@@ -2664,8 +2664,8 @@ class SchoolApp {
     });
 
     // Branding Form
-    document.getElementById("brandingForm")?.addEventListener("submit", (e) => {
-      e.preventDefault();
+    // v3.6 — Direct button handler (form submit was unreliable)
+    document.getElementById("btnSaveBranding")?.addEventListener("click", () => {
       const updated = {
         schoolName: document.getElementById("cfgSchoolName").value,
         schoolShortName: document.getElementById("cfgShortName").value,
@@ -2686,9 +2686,25 @@ class SchoolApp {
       };
 
       saveAppConfig(updated);
+      this.config = getAppConfig();
       this.applyThemeAndBranding();
       this.showToast("School branding updated successfully!", "success");
+      // v3.6 — Also push to Firebase RTDB so it survives reload
+      // (boot fetches school_config.json from RTDB and overwrites local)
+      try {
+        const fbUrl = this.config.firebase?.databaseURL;
+        if (fbUrl && navigator.onLine) {
+          fetch(`${fbUrl}/school_config.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(this.config),
+          }).catch(() => {});
+        }
+      } catch (e) {}
     });
+
+    // Prevent any stray form submits from reloading the page
+    document.getElementById("brandingForm")?.addEventListener("submit", (e) => e.preventDefault());
 
     // Export config.js file for selling
     document.getElementById("btnExportConfigFile")?.addEventListener("click", () => {
