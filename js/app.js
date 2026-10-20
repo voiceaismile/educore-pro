@@ -14,7 +14,7 @@ import { licenseManager } from "./license.js";
 import { normalizePakPhone, waLink, daysOverdue, feeReminderMessage, resultShareMessage, defaulterSummaryText } from "./whatsapp.js";
 import { PAYMENT_METHODS, getPaymentSettings, hasPaymentSettings, paymentInstructionsHTML, buildPaymentRecord, methodLabel } from "./onlinepay.js";
 // v3.0 — all-in-one school suite modules
-import { t, getLanguage, setLanguage, applyI18nToStatic, isRTL } from "./i18n.js";
+// v3.2 — i18n removed per owner request (English only)
 import { registerServiceWorker, installPromptHandler, isInstallable, showInstallPrompt, renderInstallBanner, wasInstallBannerDismissed, dismissInstallBanner } from "./pwa.js";
 import { renderExpensesView, bindExpensesEvents } from "./expenses.js";
 import { renderPayrollView, bindPayrollEvents } from "./payroll.js";
@@ -110,7 +110,6 @@ class SchoolApp {
       const landing = document.getElementById("publicLandingPage");
       if (!landing) return;
       landing.insertAdjacentHTML("afterbegin", renderInstallBanner());
-      applyI18nToStatic(document);
       document.getElementById("btnPwaInstall")?.addEventListener("click", async () => {
         await showInstallPrompt();
         document.getElementById("pwaInstallBanner")?.remove();
@@ -250,29 +249,7 @@ class SchoolApp {
       }
     }
 
-    // v3.0 — Language toggle (EN / اردو)
-    const langBtn = document.getElementById("langToggleBtn");
-    const langLabel = document.getElementById("langToggleLabel");
-    const syncLangLabel = () => {
-      if (langLabel) langLabel.textContent = getLanguage() === "ur" ? "EN" : "اردو";
-    };
-    syncLangLabel();
-    if (langBtn) {
-      langBtn.addEventListener("click", () => {
-        const next = getLanguage() === "ur" ? "en" : "ur";
-        setLanguage(next);
-      });
-    }
-    window.addEventListener("languageChanged", () => {
-      syncLangLabel();
-      applyI18nToStatic(document);
-      // Re-render current view so dynamic strings translate
-      if (auth.getCurrentUser()) {
-        this.refreshCurrentView();
-      } else {
-        this.renderPublicLandingPage();
-      }
-    });
+    // v3.2 — Language toggle removed per owner request (English only).
 
     // Sidebar mobile toggle (v2.2: drawer + backdrop + auto-close)
     const menuToggle = document.getElementById("menuToggleBtn");
