@@ -304,10 +304,6 @@ class FirebaseSyncManager {
       this.isSyncing = false;
     }
   }
-    } finally {
-      this.isSyncing = false;
-    }
-  }
 
   /**
    * Complete Snapshot Cloud Backup:

@@ -5490,7 +5490,23 @@ export function saveAppConfig(newConfig) {
       }
     });
 
-  /**
+
+    // Smooth scrolling for internal anchor links
+    document.querySelectorAll('#publicLandingPage a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener("click", function (e) {
+        const targetId = this.getAttribute("href");
+        if (targetId && targetId !== "#") {
+          const targetEl = document.querySelector(targetId);
+          if (targetEl) {
+            e.preventDefault();
+            targetEl.scrollIntoView({ behavior: "smooth" });
+          }
+        }
+      });
+    });
+  }
+
+/**
    * v3.0 — Show the parent-facing dashboard (from landing page Parent Login).
    * Renders inside a full modal so the landing page stays behind.
    */
@@ -5608,20 +5624,6 @@ export function saveAppConfig(newConfig) {
     });
   }
 
-    // Smooth scrolling for internal anchor links
-    document.querySelectorAll('#publicLandingPage a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener("click", function (e) {
-        const targetId = this.getAttribute("href");
-        if (targetId && targetId !== "#") {
-          const targetEl = document.querySelector(targetId);
-          if (targetEl) {
-            e.preventDefault();
-            targetEl.scrollIntoView({ behavior: "smooth" });
-          }
-        }
-      });
-    });
-  }
 }
 
 // Instantiate and expose globally
