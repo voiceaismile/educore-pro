@@ -1446,6 +1446,84 @@ ul {
   margin: 10mm;
 }
 
+
+/* ==========================================================================
+   v2.2.1 — MOBILE OVERFLOW HARDENING (Faisal: boxes going out of screen)
+   Blanket rules: on mobile, NOTHING may exceed the viewport width.
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Every element respects viewport width */
+  *, *::before, *::after {
+    max-width: 100vw;
+  }
+
+  /* Flex children can shrink (prevents flex blowout) */
+  div, section, article, aside, header, footer, nav, main, form, table {
+    min-width: 0;
+  }
+
+  /* All flex rows stack vertically unless explicitly scrollable */
+  .page-header > div,
+  .page-title-group,
+  .page-actions-group,
+  .card > div[style*="display:flex"],
+  .card > div[style*="display: flex"] {
+    flex-wrap: wrap;
+  }
+
+  /* Grids → single column (catch-all for any grid not already handled) */
+  [class*="grid"], [class*="Grid"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inline-style flex rows (common in dynamically rendered views) */
+  div[style*="display:flex"]:not(.table-container):not([class*="scroll"]),
+  div[style*="display: flex"]:not(.table-container):not([class*="scroll"]) {
+    flex-wrap: wrap !important;
+  }
+
+  /* Long text/URLs break instead of overflowing */
+  p, span, div, td, th, a, li, h1, h2, h3, h4, h5 {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
+  /* Images and media never exceed container */
+  img, video, canvas, svg, iframe {
+    max-width: 100% !important;
+    height: auto;
+  }
+
+  /* Fixed-width boxes become fluid */
+  [style*="width:"] {
+    max-width: 100% !important;
+  }
+
+  /* Stat cards / info boxes: full width stacked */
+  .stat-card, .info-box, .summary-card, .metric-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Padding safety on main containers */
+  .content-body, .page-content, .main-content, .container, .landing-section {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra-tight screens: reduce card padding */
+  .card {
+    padding: 12px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 10px;
+  }
+}
+
 @media print {
   /* 1. Global Reset & Print Layout */
   html, body {
