@@ -13,10 +13,10 @@
 
 export const DEFAULT_CONFIG = {
   // --- 🎓 School Branding ---
-  schoolName: "School Management System",
-  schoolShortName: "School Portal",
+  schoolName: "EduPro",
+  schoolShortName: "EduPro",
   tagline: "Inspiring Excellence, Fostering Innovation",
-  logoText: "EduPortal",
+  logoText: "EduPro",
   licenseKey: "", // Active Commercial License Key
   ownerCnic: "",       // Registered Owner CNIC
   establishedYear: "2026",
