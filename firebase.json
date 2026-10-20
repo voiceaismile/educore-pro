@@ -1,0 +1,43 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "RESELLER_GUIDE.md",
+      "README.md",
+      "server.js",
+      "**/*.bat",
+      "**/*.ps1",
+      "**/*.exe",
+      "Client-Distribution-Package/**",
+      "OSST-Tandlianwala/**",
+      "License-Dashboard/**",
+      "**/*.zip"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=3600"
+          }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "database": {
+    "rules": "database.rules.json"
+  }
+}

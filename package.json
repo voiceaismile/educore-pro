@@ -1,0 +1,19 @@
+{
+  "name": "educore-school-management",
+  "version": "3.5.0",
+  "description": "Offline-first School Management System with Firebase RTDB & Firestore backup",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "deploy": "firebase deploy --only hosting"
+  },
+  "keywords": [
+    "school-management",
+    "erp",
+    "offline-first",
+    "firebase",
+    "indexeddb"
+  ],
+  "author": "EduCore",
+  "license": "Commercial"
+}
