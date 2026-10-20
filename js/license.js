@@ -329,7 +329,10 @@ class LicenseManager {
       localStorage.setItem(CACHE_STATUS_KEY, JSON.stringify({ key, cnic: cnicDigits, time: Date.now(), data }));
 
       this.hideLockScreen();
-      window.dispatchEvent(new CustomEvent("licenseActivated", { detail: { key, cnic: cnicDigits, data } }));
+      // v2.2.3 — only announce when user freshly activates (not on silent boot re-verify)
+      if (!isInitialCheck) {
+        window.dispatchEvent(new CustomEvent("licenseActivated", { detail: { key, cnic: cnicDigits, data } }));
+      }
       return true;
 
     } catch (err) {
