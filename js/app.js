@@ -113,8 +113,22 @@ class SchoolApp {
       // offline fallback automatic
     }
 
-    // 2. Check Authentication & Initial View — renders IMMEDIATELY
-    const user = auth.getCurrentUser();
+    // 2. v4.2 DEMO MODE — Auto-login as master admin, straight to dashboard.
+    // No login screen, no landing page, no session lock for demo visitors.
+    let user = auth.getCurrentUser();
+    if (!user) {
+      try {
+        const users = await db.getAll(STORES.USERS);
+        let admin = users.find(u => u.role === "admin");
+        if (admin) {
+          auth.setSession({ ...admin });
+          user = auth.getCurrentUser();
+          console.log("EduPro: Demo auto-login as admin.");
+        }
+      } catch (e) {
+        console.warn("EduPro: Demo auto-login failed:", e.message);
+      }
+    }
     if (!user) {
       this.renderPublicLandingPage();
     } else {
