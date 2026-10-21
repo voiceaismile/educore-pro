@@ -493,7 +493,7 @@ class SchoolApp {
     const userAvatarEl = document.getElementById("headerUserAvatar");
 
     if (userNameEl) userNameEl.textContent = user.name || user.email;
-    if (userRoleEl) userRoleEl.textContent = user.role.toUpperCase();
+    if (userRoleEl) userRoleEl.textContent = (user.role || "ADMIN").toUpperCase();
     if (userAvatarEl && user.avatar) userAvatarEl.src = user.avatar;
 
     // Render Navigation Menu Items
@@ -1029,7 +1029,7 @@ class SchoolApp {
             ${notices.slice(0, 3).map(n => `
               <div style="padding:14px; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:var(--radius-md);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <span class="badge ${n.priority === 'urgent' ? 'badge-danger' : 'badge-info'}">${n.priority.toUpperCase()}</span>
+                  <span class="badge ${n.priority === 'urgent' ? 'badge-danger' : 'badge-info'}">${(n.priority || "info").toUpperCase()}</span>
                   <span style="font-size:11px; color:var(--text-dim);">${n.date}</span>
                 </div>
                 <strong style="font-size:13.5px; display:block; margin-bottom:4px;">${n.title}</strong>
@@ -1663,7 +1663,7 @@ class SchoolApp {
                   <td><strong>${this.config.currency}${Number(f.amount).toLocaleString()}</strong></td>
                   <td>
                     <span class="badge ${f.status === 'paid' ? 'badge-success' : 'badge-warning'}">
-                      ${f.status.toUpperCase()}
+                      ${(f.status || "pending").toUpperCase()}
                     </span>
                   </td>
                   <td>${f.paidDate ? `Paid on ${f.paidDate}` : `Due: ${f.dueDate}`}</td>
@@ -1947,7 +1947,7 @@ class SchoolApp {
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
               <div>
                 <span class="badge ${n.priority === 'urgent' ? 'badge-danger' : n.priority === 'high' ? 'badge-warning' : 'badge-info'}" style="margin-bottom:6px;">
-                  ${n.priority.toUpperCase()} PRIORITY
+                  ${(n.priority || "info").toUpperCase()} PRIORITY
                 </span>
                 <h3 style="font-size:18px; font-weight:700; color:var(--text-main);">${n.title}</h3>
               </div>
@@ -1960,7 +1960,7 @@ class SchoolApp {
               ${n.content}
             </p>
             <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-subtle); padding-top:10px; font-size:12px; color:var(--text-dim);">
-              <span>Audience: <strong>${n.target.toUpperCase()}</strong></span>
+              <span>Audience: <strong>${(n.target || "all").toUpperCase()}</strong></span>
               ${canPost ? `<button class="btn btn-secondary btn-sm btn-delete-notice" data-id="${n.id}" style="color:#f87171;"><i class="fa-solid fa-trash"></i> Delete</button>` : ''}
             </div>
           </div>
@@ -3363,7 +3363,7 @@ export function saveAppConfig(newConfig) {
                   <tr>
                     <td>${f.type}</td>
                     <td><strong>${this.config.currency}${f.amount}</strong></td>
-                    <td><span class="badge ${f.status === 'paid' ? 'badge-success' : 'badge-warning'}">${f.status.toUpperCase()}</span></td>
+                    <td><span class="badge ${f.status === 'paid' ? 'badge-success' : 'badge-warning'}">${(f.status || "pending").toUpperCase()}</span></td>
                   </tr>
                 `).join("")}
               </tbody>
@@ -3515,7 +3515,7 @@ export function saveAppConfig(newConfig) {
                   <td><strong>${f.type}</strong></td>
                   <td><strong>${this.config.currency}${f.amount}</strong></td>
                   <td>${f.dueDate}</td>
-                  <td><span class="badge ${f.status === 'paid' ? 'badge-success' : 'badge-warning'}">${f.status.toUpperCase()}</span></td>
+                  <td><span class="badge ${f.status === 'paid' ? 'badge-success' : 'badge-warning'}">${(f.status || "pending").toUpperCase()}</span></td>
                   <td style="text-align:right;">
                     ${f.status === 'paid' ? `
                       <div style="display:inline-flex; gap:6px;">
@@ -5198,7 +5198,7 @@ export function saveAppConfig(newConfig) {
         <div class="admin-landing-topbar">
           <div>
             <i class="fa-solid fa-shield-halved" style="margin-right:6px;"></i>
-            Previewing Public Website as <strong>${user.name}</strong> (${user.role.toUpperCase()})
+            Previewing Public Website as <strong>${user.name}</strong> (${(user.role || "ADMIN").toUpperCase()})
           </div>
           <button class="btn-back-erp" id="btnReturnToERP">
             <i class="fa-solid fa-arrow-left" style="margin-right:4px;"></i> Return to Portal Dashboard

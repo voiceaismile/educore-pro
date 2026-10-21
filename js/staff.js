@@ -271,7 +271,7 @@ export async function renderLeaveView(app) {
       <td>${esc(leaveTypeLabel(l.type))}</td>
       <td>${esc(l.fromDate)} → ${esc(l.toDate)} <small>(${leaveDayCount(l)}d)</small></td>
       <td style="max-width:220px;">${esc(l.reason || "—")}</td>
-      <td><span class="badge ${l.status === "approved" ? "badge-success" : l.status === "rejected" ? "badge-danger" : "badge-warning"}">${esc(l.status.toUpperCase())}</span></td>
+      <td><span class="badge ${l.status === "approved" ? "badge-success" : l.status === "rejected" ? "badge-danger" : "badge-warning"}">${esc((l.status || "pending").toUpperCase())}</span></td>
       ${showActions ? `
       <td style="text-align:right; white-space:nowrap;">
         <button class="btn btn-success btn-sm btn-leave-approve" data-id="${esc(l.id)}">

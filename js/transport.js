@@ -177,7 +177,7 @@ export async function renderTransportView(app) {
         <tr>
           <td><strong>${esc(s ? (s.name || "—") : sid)}</strong>
             <div style="font-size:11px; color:var(--text-dim);">${esc(s ? (s.className || "") : "")}</div></td>
-          <td><span class="badge ${st === "paid" ? "badge-success" : "badge-warning"}">${st.toUpperCase()}</span></td>
+          <td><span class="badge ${st === "paid" ? "badge-success" : "badge-warning"}">${(st || "pending").toUpperCase()}</span></td>
           <td style="text-align:right; white-space:nowrap;">
             ${st !== "paid" ? `<button class="btn btn-success btn-sm tfee-paid" data-route="${esc(route.id)}" data-student="${esc(sid)}">Paid</button>` : ""}
             <button class="btn btn-secondary btn-sm tfee-remove" data-student="${esc(sid)}" title="Remove from route"><i class="fa-solid fa-xmark"></i></button>
