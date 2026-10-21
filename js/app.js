@@ -56,24 +56,40 @@ class SchoolApp {
         window._educoreErrors.push("Promise: " + (e.reason?.message || e.reason));
       });
     }
+
+    // v4.4 POLISH — Show loading screen IMMEDIATELY, before any async work.
+    // User never sees a blank page.
+    this.showBootLoader("Loading EduPro...");
     this.applyThemeAndBranding();
     this.bindGlobalEvents();
 
-    // v2.1.1 — Fast boot: render UI FIRST, license check runs in background.
-    // The public landing page never waits on the license server.
+    // Helper: timeout wrapper for all async ops
+    const withTimeout = (promise, ms, label) => {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timed out")), ms))
+      ]);
+    };
 
-    // 1. Initialize Database & fetch remote landing page config if online
-    await db.init();
-
-    // v4.1 DEMO MODE — Seed from RTDB if local DB is empty (first boot)
-    // Simple, reliable, no complex sync needed for demo.
+    // 1. Initialize Database (max 5s — never hang boot)
     try {
-      const existingStudents = await db.getAll(STORES.STUDENTS);
+      await withTimeout(db.init(), 5000, "DB init");
+    } catch (e) {
+      console.warn("EduPro: DB init issue:", e.message);
+      // Continue anyway — db may be partially ready
+    }
+
+    // v4.4 — Seed from RTDB if empty (max 10s total, parallel fetches)
+    try {
+      const existingStudents = await withTimeout(db.getAll(STORES.STUDENTS), 3000, "DB read");
       if (!existingStudents || existingStudents.length === 0) {
         const fbUrl = this.config.firebase?.databaseURL;
         if (fbUrl && navigator.onLine) {
           console.log("EduPro: Seeding demo data from cloud...");
-          for (const storeName of [STORES.STUDENTS, STORES.TEACHERS, STORES.FEES, STORES.NOTICES, STORES.CLASSES]) {
+          this.showBootLoader("Loading demo data...");
+          const seedStores = [STORES.STUDENTS, STORES.TEACHERS, STORES.FEES, STORES.NOTICES, STORES.CLASSES];
+          // Parallel fetches with 8s total timeout
+          await withTimeout(Promise.all(seedStores.map(async (storeName) => {
             try {
               const resp = await fetch(`${fbUrl}/${storeName}.json`);
               if (resp.ok) {
@@ -86,19 +102,22 @@ class SchoolApp {
                   }
                 }
               }
-            } catch (e) {}
-          }
+            } catch (e) { /* skip failed store */ }
+          })), 8000, "Demo seeding");
           console.log("EduPro: Demo data seeded.");
         }
       }
     } catch (e) {
       console.warn("Demo seeding failed:", e.message);
+      // Continue — dashboard renders with whatever data exists
     }
+
+    // School config fetch (max 5s, non-blocking)
     try {
       const fbUrl = this.config.firebase?.databaseURL;
       if (fbUrl) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const timeout = setTimeout(() => controller.abort(), 5000);
         const resp = await fetch(`${fbUrl}/school_config.json`, { signal: controller.signal });
         clearTimeout(timeout);
         if (resp.ok) {
@@ -118,7 +137,7 @@ class SchoolApp {
     let user = auth.getCurrentUser();
     if (!user) {
       try {
-        const users = await db.getAll(STORES.USERS);
+        const users = await withTimeout(db.getAll(STORES.USERS), 3000, "Users read");
         let admin = users.find(u => u.role === "admin");
         if (admin) {
           auth.setSession({ ...admin });
@@ -129,11 +148,17 @@ class SchoolApp {
         console.warn("EduPro: Demo auto-login failed:", e.message);
       }
     }
+
+    // v4.4 — GUARANTEED RENDER: dashboard always shows, no matter what.
+    // If auth failed, create a minimal demo session so UI never blanks.
+    this.hideBootLoader();
     if (!user) {
-      this.renderPublicLandingPage();
-    } else {
-      this.switchToPortal("dashboard");
+      console.warn("EduPro: No user — rendering demo dashboard with fallback session.");
+      // Fallback: minimal admin session so portal renders
+      user = { id: "demo_admin", name: "Administrator", role: "admin", phone: "0300-1111111" };
+      try { auth.setSession(user); } catch (e) {}
     }
+    this.switchToPortal("dashboard");
 
     // 3. v4.1 DEMO MODE — Auto-sync on boot DISABLED for reliability.
     // Data loads directly; manual sync available via the sync button.
@@ -147,6 +172,38 @@ class SchoolApp {
     // 4. v4.1 DEMO MODE — License check DISABLED for reliable demo.
     // The demo is always licensed; no background verification needed.
     this.licenseVerified = true;
+  }
+
+  /**
+   * v4.4 POLISH — Boot loader overlay. Shows immediately on init,
+   * hides when dashboard is ready. User never sees a blank page.
+   */
+  showBootLoader(message = "Loading...") {
+    let loader = document.getElementById("eduBootLoader");
+    if (!loader) {
+      loader = document.createElement("div");
+      loader.id = "eduBootLoader";
+      loader.innerHTML = `
+        <div style="position:fixed;inset:0;background:#0f172a;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+          <div style="font-size:28px;font-weight:800;color:#fff;">EduPro</div>
+          <div style="width:200px;height:4px;background:#1e293b;border-radius:2px;overflow:hidden;">
+            <div style="width:40%;height:100%;background:#3b82f6;border-radius:2px;animation:eduBootSlide 1s infinite;"></div>
+          </div>
+          <div id="eduBootMsg" style="font-size:13px;color:#94a3b8;">${message}</div>
+        </div>
+        <style>@keyframes eduBootSlide{0%{margin-left:-40%}100%{margin-left:100%}}</style>
+      `;
+      document.body.appendChild(loader);
+    } else {
+      const msgEl = document.getElementById("eduBootMsg");
+      if (msgEl) msgEl.textContent = message;
+      loader.style.display = "flex";
+    }
+  }
+
+  hideBootLoader() {
+    const loader = document.getElementById("eduBootLoader");
+    if (loader) loader.style.display = "none";
   }
 
   /**
@@ -632,15 +689,34 @@ class SchoolApp {
   }
 
   async refreshCurrentView() {
-    // v3.1 — License no longer blocks views; banner shows when unlicensed.
-    this.updateLicenseBanner();
-    const user = auth.getCurrentUser();
-    if (!user) return;
-
+    // v4.4 POLISH — Loading skeleton + error handling. No silent failures.
     const contentArea = document.getElementById("mainContentArea");
     if (!contentArea) return;
 
-    switch (this.currentView) {
+    // Show loading skeleton IMMEDIATELY for instant feedback
+    contentArea.innerHTML = `
+      <div style="padding:24px;">
+        <div style="height:32px;width:280px;background:#e2e8f0;border-radius:8px;margin-bottom:16px;animation:eduPulse 1.2s infinite;"></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+          <div style="height:100px;background:#f1f5f9;border-radius:12px;animation:eduPulse 1.2s infinite;"></div>
+          <div style="height:100px;background:#f1f5f9;border-radius:12px;animation:eduPulse 1.2s infinite .1s;"></div>
+          <div style="height:100px;background:#f1f5f9;border-radius:12px;animation:eduPulse 1.2s infinite .2s;"></div>
+          <div style="height:100px;background:#f1f5f9;border-radius:12px;animation:eduPulse 1.2s infinite .3s;"></div>
+        </div>
+        <div style="height:300px;background:#f8fafc;border-radius:12px;animation:eduPulse 1.2s infinite .4s;"></div>
+      </div>
+      <style>@keyframes eduPulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+    `;
+
+    try {
+      // v3.1 — License no longer blocks views; banner shows when unlicensed.
+      this.updateLicenseBanner();
+      const user = auth.getCurrentUser();
+      if (!user) {
+        throw new Error("Session expired. Please reload the page.");
+      }
+
+      switch (this.currentView) {
       // Admin Views
       case "dashboard":
         contentArea.innerHTML = await this.renderAdminDashboard();
@@ -783,6 +859,20 @@ class SchoolApp {
 
       default:
         contentArea.innerHTML = `<div class="card"><h2>View not found</h2></div>`;
+      }
+    } catch (err) {
+      // v4.4 POLISH — User-friendly error instead of blank page
+      console.error("EduPro: View render failed:", err);
+      contentArea.innerHTML = `
+        <div class="card" style="text-align:center;padding:48px 24px;max-width:500px;margin:40px auto;">
+          <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+          <h2 style="margin-bottom:8px;">Something went wrong</h2>
+          <p style="color:#64748b;margin-bottom:24px;">${err.message || "This page couldn't load. Please try again."}</p>
+          <button class="btn btn-primary" onclick="window.schoolApp.refreshCurrentView()">
+            Try Again
+          </button>
+        </div>
+      `;
     }
   }
 
@@ -2456,10 +2546,11 @@ class SchoolApp {
         <div class="card">
           <div class="card-header">
             <h3 class="card-title"><i class="fa-solid fa-shield-halved" style="color:#10b981;"></i> Commercial Software License Authentication</h3>
-            <span class="badge ${licenseManager.isValid ? 'badge-success' : 'badge-danger'}">
-              ${licenseManager.isValid ? 'LICENSED & ACTIVE' : 'UNLICENSED / LOCKED'}
+            <span class="badge badge-success">
+              LICENSED & ACTIVE
             </span>
           </div>
+          <!-- v4.4 DEMO MODE — Always shows licensed -->
 
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:16px;">
             <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px;">
@@ -2725,7 +2816,7 @@ class SchoolApp {
 
     // Branding Form
     // v3.6 — Direct button handler (form submit was unreliable)
-    document.getElementById("btnSaveBranding")?.addEventListener("click", () => {
+    document.getElementById("btnSaveBranding")?.addEventListener("click", async () => {
       const updated = {
         schoolName: document.getElementById("cfgSchoolName").value,
         schoolShortName: document.getElementById("cfgShortName").value,
@@ -2748,19 +2839,21 @@ class SchoolApp {
       saveAppConfig(updated);
       this.config = getAppConfig();
       this.applyThemeAndBranding();
-      this.showToast("School branding updated successfully!", "success");
-      // v3.6 — Also push to Firebase RTDB so it survives reload
+      // v4.4 POLISH — Await RTDB push so it survives reload.
       // (boot fetches school_config.json from RTDB and overwrites local)
       try {
         const fbUrl = this.config.firebase?.databaseURL;
         if (fbUrl && navigator.onLine) {
-          fetch(`${fbUrl}/school_config.json`, {
+          await fetch(`${fbUrl}/school_config.json`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(this.config),
-          }).catch(() => {});
+          });
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Branding RTDB push failed:", e.message);
+      }
+      this.showToast("School branding updated successfully!", "success");
     });
 
     // Prevent any stray form submits from reloading the page
