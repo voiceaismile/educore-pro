@@ -293,23 +293,23 @@ export async function renderEscalationDashboard(app) {
       </div>`;
   }).join("");
 
-  const body = rows.length ? rows.map(({ f, esc, tier, phone, link }) => `
+  const body = rows.length ? rows.map(({ f, esc: es, tier, phone, link }) => `
     <tr>
       <td><strong>${esc(f.studentName)}</strong>
         <div style="font-size:11px; color:var(--text-dim, #64748b);">${esc(f.receiptNo || "")}</div></td>
       <td>${esc(f.type || "fee")}</td>
       <td><strong>${cur} ${Number(f.amount || 0).toLocaleString()}</strong></td>
-      <td>${esc(f.dueDate || "—")}<div style="font-size:11px; color:#ef4444;">${esc.days} din overdue</div></td>
+      <td>${esc(f.dueDate || "—")}<div style="font-size:11px; color:#ef4444;">${es.days} din overdue</div></td>
       <td><span class="badge ${tier.badge}"><i class="fa-solid ${tier.icon}"></i> Level ${tier.level}</span>
-        ${esc.dueForSend
+        ${es.dueForSend
           ? `<div style="font-size:11px; color:#f59e0b; margin-top:2px;">Naya tier — bhejna baqi</div>`
-          : `<div style="font-size:11px; color:var(--text-dim, #64748b); margin-top:2px;">Level ${esc.lastLevel} bheja ja chuka</div>`}
+          : `<div style="font-size:11px; color:var(--text-dim, #64748b); margin-top:2px;">Level ${es.lastLevel} bheja ja chuka</div>`}
       </td>
       <td style="text-align:right; white-space:nowrap;">
         ${link
           ? `<a class="btn btn-success btn-sm btn-log-escalation" target="_blank" rel="noopener" href="${link}"
-               data-fee-id="${esc(f.id)}" data-level="${esc.level}" data-student-id="${esc(f.studentId || "")}">
-               <i class="fa-brands fa-whatsapp"></i> Send L${esc.level}</a>`
+               data-fee-id="${esc(f.id)}" data-level="${es.level}" data-student-id="${esc(f.studentId || "")}">
+               <i class="fa-brands fa-whatsapp"></i> Send L${es.level}</a>`
           : `<span class="badge badge-warning" title="Parent ka number mojood nahi">No number</span>`}
       </td>
     </tr>`).join("")
