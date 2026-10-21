@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TITLE}} | EDUCORE PRO Blog</title>
+  <meta name="description" content="{{DESCRIPTION}}">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="canonical" href="https://voiceaismile.github.io/educore-pro/blog/{{SLUG}}/">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{TITLE}}">
+  <meta property="og:description" content="{{DESCRIPTION}}">
+  <meta property="og:url" content="https://voiceaismile.github.io/educore-pro/blog/{{SLUG}}/">
+  <meta property="og:site_name" content="EDUCORE PRO Blog">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{TITLE}}">
+  <meta name="twitter:description" content="{{DESCRIPTION}}">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core Stylesheet (site dark theme) -->
+  <link rel="stylesheet" href="../../css/style.css?v=4.1">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "{{TITLE}}",
+    "description": "{{DESCRIPTION}}",
+    "datePublished": "{{DATE}}",
+    "author": { "@type": "Organization", "name": "EDUCORE PRO" },
+    "publisher": { "@type": "Organization", "name": "EDUCORE PRO" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://voiceaismile.github.io/educore-pro/blog/{{SLUG}}/" }
+  }
+  </script>
+
+  <style>
+    .blog-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(13, 19, 34, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .blog-nav-inner {
+      max-width: 860px; margin: 0 auto; padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .blog-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main); font-weight: 800; font-size: 16px; }
+    .blog-brand i { color: var(--primary); font-size: 20px; }
+    .blog-nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; margin-left: 20px; }
+    .blog-nav-links a:hover { color: var(--text-main); }
+    .blog-wrap { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+    .breadcrumbs { font-size: 12.5px; color: var(--text-dim); margin-bottom: 20px; }
+    .breadcrumbs a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumbs a:hover { color: var(--primary); }
+    .article-meta { display: flex; align-items: center; gap: 14px; margin: 14px 0 28px; font-size: 13px; color: var(--text-muted); }
+    .article-meta .tag { background: rgba(79,70,229,.15); color: #a5b4fc; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 11.5px; }
+    .article-body { font-size: 16.5px; line-height: 1.85; color: #cbd5e1; }
+    .article-body h2 { font-size: 22px; font-weight: 800; color: var(--text-main); margin: 40px 0 14px; letter-spacing: -0.02em; }
+    .article-body h3 { font-size: 18px; font-weight: 700; color: var(--text-main); margin: 28px 0 10px; }
+    .article-body p { margin-bottom: 18px; }
+    .article-body ul, .article-body ol { margin: 0 0 20px 22px; }
+    .article-body li { margin-bottom: 10px; }
+    .article-body strong { color: var(--text-main); }
+    .article-body a { color: #818cf8; }
+    .tip-box { background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.25); border-radius: var(--radius-md); padding: 18px 20px; margin: 24px 0; }
+    .tip-box strong { color: #6ee7b7; }
+    .cta-card { margin-top: 48px; text-align: center; padding: 36px 28px; }
+    .cta-card h3 { font-size: 20px; margin-bottom: 10px; color: var(--text-main); }
+    .cta-card p { color: var(--text-muted); font-size: 14.5px; margin-bottom: 20px; }
+    @media (max-width: 640px) { .blog-wrap { padding: 28px 18px 60px; } .article-body { font-size: 15.5px; } }
+  </style>
+</head>
+<body>
+
+  <nav class="blog-nav">
+    <div class="blog-nav-inner">
+      <a class="blog-brand" href="../../"><i class="fa-solid fa-graduation-cap"></i> EDUCORE PRO</a>
+      <div class="blog-nav-links">
+        <a href="../">Blog</a>
+        <a href="../../">Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="blog-wrap">
+    <div class="breadcrumbs">
+      <a href="../../">Home</a> &nbsp;/&nbsp; <a href="../">Blog</a> &nbsp;/&nbsp; {{TITLE}}
+    </div>
+
+    <h1 style="font-size:32px;font-weight:800;letter-spacing:-0.03em;line-height:1.25;">{{TITLE}}</h1>
+    <div class="article-meta">
+      <span class="tag">School Management</span>
+      <span><i class="fa-regular fa-calendar"></i> {{DATE}}</span>
+      <span><i class="fa-regular fa-clock"></i> 6 min read</span>
+    </div>
+
+    <article class="article-body">
+      {{CONTENT}}
+    </article>
+
+    <div class="card cta-card">
+      <h3>Collect fees on autopilot with EDUCORE PRO</h3>
+      <p>WhatsApp fee reminders, defaulter lists, digital vouchers &amp; complete fee ledger — built for Pakistani private schools.</p>
+      <a href="../../" class="btn btn-primary"><i class="fa-solid fa-rocket"></i> Try the Free Demo</a>
+    </div>
+
+    <p style="margin-top:32px;"><a href="../" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;"><i class="fa-solid fa-arrow-left"></i> Back to all articles</a></p>
+  </main>
+
+</body>
+</html>
