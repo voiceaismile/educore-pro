@@ -162,6 +162,20 @@ class LocalDatabase {
 
       request.onsuccess = async (event) => {
         this.db = event.target.result;
+        // FIX 2026-10-21: if the browser closes the IDB connection (version
+        // upgrade from another tab, resource cleanup, etc.), drop the cached
+        // handle so the next init() re-opens it instead of throwing
+        // "The database connection is closing" forever.
+        this.db.onclose = () => {
+          console.warn("IndexedDB connection closed — will re-open on next use.");
+          this.db = null;
+          this.initPromise = null;
+        };
+        this.db.onversionchange = () => {
+          this.db.close();
+          this.db = null;
+          this.initPromise = null;
+        };
         await this.seedInitialDataIfEmpty();
         resolve(this.db);
       };
@@ -177,36 +191,53 @@ class LocalDatabase {
 
   // --- Generic Helpers ---
 
+  // FIX 2026-10-21: wrap every DB op so a dead connection auto-recovers
+  // (reset + one retry) instead of crashing the dashboard.
+  async _withDb(fn) {
+    try {
+      await this.init();
+      return await fn();
+    } catch (err) {
+      const msg = String(err && (err.message || err.name || err));
+      if (/closing|closed|InvalidStateError/i.test(msg)) {
+        console.warn("IndexedDB connection dead — resetting and retrying once.");
+        try { this.db && this.db.close(); } catch (_) {}
+        this.db = null;
+        this.initPromise = null;
+        await this.init();
+        return await fn();
+      }
+      throw err;
+    }
+  }
+
   async getAll(storeName) {
-    await this.init();
-    return new Promise((resolve, reject) => {
+    return this._withDb(() => new Promise((resolve, reject) => {
       const tx = this.db.transaction(storeName, "readonly");
       const store = tx.objectStore(storeName);
       const req = store.getAll();
       req.onsuccess = () => resolve(req.result || []);
       req.onerror = () => reject(req.error);
-    });
+    }));
   }
 
   async getById(storeName, id) {
-    await this.init();
-    return new Promise((resolve, reject) => {
+    return this._withDb(() => new Promise((resolve, reject) => {
       const tx = this.db.transaction(storeName, "readonly");
       const store = tx.objectStore(storeName);
       const req = store.get(id);
       req.onsuccess = () => resolve(req.result || null);
       req.onerror = () => reject(req.error);
-    });
+    }));
   }
 
   async add(storeName, item, queueSync = true) {
-    await this.init();
     if (!item.id) {
       item.id = `${storeName.slice(0, 3)}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     }
     item.updatedAt = new Date().toISOString();
 
-    return new Promise((resolve, reject) => {
+    return this._withDb(() => new Promise((resolve, reject) => {
       const tx = this.db.transaction([storeName, STORES.SYNC_QUEUE], "readwrite");
       const store = tx.objectStore(storeName);
       const req = store.add(item);
@@ -229,14 +260,13 @@ class LocalDatabase {
         resolve(item);
       };
       tx.onerror = () => reject(tx.error);
-    });
+    }));
   }
 
   async update(storeName, item, queueSync = true) {
-    await this.init();
     item.updatedAt = new Date().toISOString();
 
-    return new Promise((resolve, reject) => {
+    return this._withDb(() => new Promise((resolve, reject) => {
       const tx = this.db.transaction([storeName, STORES.SYNC_QUEUE], "readwrite");
       const store = tx.objectStore(storeName);
       store.put(item);
@@ -257,12 +287,11 @@ class LocalDatabase {
         resolve(item);
       };
       tx.onerror = () => reject(tx.error);
-    });
+    }));
   }
 
   async delete(storeName, id, queueSync = true) {
-    await this.init();
-    return new Promise((resolve, reject) => {
+    return this._withDb(() => new Promise((resolve, reject) => {
       const tx = this.db.transaction([storeName, STORES.SYNC_QUEUE], "readwrite");
       const store = tx.objectStore(storeName);
       store.delete(id);
@@ -283,18 +312,17 @@ class LocalDatabase {
         resolve(true);
       };
       tx.onerror = () => reject(tx.error);
-    });
+    }));
   }
 
   async clearStore(storeName) {
-    await this.init();
-    return new Promise((resolve, reject) => {
+    return this._withDb(() => new Promise((resolve, reject) => {
       const tx = this.db.transaction(storeName, "readwrite");
       const store = tx.objectStore(storeName);
       const req = store.clear();
       req.onsuccess = () => resolve(true);
       req.onerror = () => reject(req.error);
-    });
+    }));
   }
 
   // --- Backup Snapshot & Restore ---
