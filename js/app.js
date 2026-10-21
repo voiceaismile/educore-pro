@@ -19,7 +19,7 @@ import { registerServiceWorker, installPromptHandler, isInstallable, showInstall
 import { renderExpensesView, bindExpensesEvents } from "./expenses.js";
 import { renderPayrollView, bindPayrollEvents } from "./payroll.js";
 import { renderDiscountsSection, bindDiscountsSection, getDiscountSelection, renderDiscountRulesView, bindDiscountRulesEvents, applyDiscount } from "./discounts.js";
-import { renderEscalationDashboard, bindEscalationEvents } from "./escalation.js";
+import { renderEscalationDashboard, bindEscalationEvents } from "./escalation.js?v=5.1";
 import { renderSmsSettingsView, bindSmsSettingsEvents, getSmsSettings } from "./sms.js";
 import { renderHomeworkView, bindHomeworkEvents } from "./homework.js";
 import { renderTimetableView, bindTimetableEvents } from "./timetable.js";
