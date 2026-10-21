@@ -899,7 +899,7 @@ class SchoolApp {
                         <img src="${s.photoUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + s.name}" class="table-avatar" alt="Avatar">
                         <div>
                           <strong>${s.name}</strong>
-                          <div style="font-size:11px; color:var(--text-muted);">${s.email}</div>
+                          <div style="font-size:11px; color:var(--text-muted);">${s.email || s.admissionNo || ''}</div>
                         </div>
                       </div>
                     </td>
@@ -1070,14 +1070,14 @@ class SchoolApp {
     const classes = await db.getAll(STORES.CLASSES);
 
     const filtered = students.filter(s => {
-      const q = this.searchQuery;
-      const matchSearch = !q || 
-        s.name.toLowerCase().includes(q) || 
+      const q = (this.searchQuery || "").toLowerCase();
+      const matchSearch = !q ||
+        (s.name && s.name.toLowerCase().includes(q)) ||
         (s.cnic && s.cnic.toLowerCase().includes(q)) ||
         (s.phone && s.phone.includes(q)) ||
         (s.parentPhone && s.parentPhone.includes(q)) ||
-        s.admissionNo.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q);
+        (s.admissionNo && s.admissionNo.toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q));
       const matchClass = this.classFilter === "all" || s.classId === this.classFilter;
       return matchSearch && matchClass;
     });
