@@ -160,6 +160,21 @@ class SchoolApp {
     }
     this.switchToPortal("dashboard");
 
+    // v4.6 FIX — Force dashboard render after DOM settles.
+    // Ensures main panel never stays blank on boot.
+    setTimeout(() => {
+      try {
+        const panel = document.getElementById("mainContentArea");
+        if (panel && (!panel.innerHTML || panel.innerHTML.trim().length < 100)) {
+          console.log("EduPro: Boot panel empty — forcing dashboard render.");
+          this.currentView = "dashboard";
+          this.refreshCurrentView();
+        }
+      } catch (e) {
+        console.warn("EduPro: Forced render failed:", e.message);
+      }
+    }, 1500);
+
     // 3. v4.1 DEMO MODE — Auto-sync on boot DISABLED for reliability.
     // Data loads directly; manual sync available via the sync button.
     // syncManager.initialize() is called on-demand by the sync button.
