@@ -217,7 +217,7 @@ class AuthManager {
       parentPhone: formattedPhone,
       address: "Enrolled Campus",
       status: "Active",
-      photoUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
+      photoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4f46e5&color=fff&bold=true`,
       joinedDate: new Date().toISOString().split("T")[0]
     };
 
@@ -281,7 +281,7 @@ class AuthManager {
       assignedClasses: assignedClasses || ["Grade 10 - Section A"],
       status: "Active",
       joiningDate: new Date().toISOString().split("T")[0],
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4f46e5&color=fff&bold=true`
     };
 
     const newUser = {

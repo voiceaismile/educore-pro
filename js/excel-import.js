@@ -159,7 +159,7 @@ export function buildStudentFromRow(rowCells, mapping) {
     dob: obj.dob || "",
     status: "Active",
     joinedDate: new Date().toISOString().split("T")[0],
-    photoUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(obj.name)}`
+    photoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(obj.name)}&background=4f46e5&color=fff&bold=true`
   };
 }
 

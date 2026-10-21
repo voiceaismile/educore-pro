@@ -1001,7 +1001,7 @@ class SchoolApp {
                   <tr>
                     <td>
                       <div class="table-user-cell">
-                        <img src="${s.photoUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + s.name}" class="table-avatar" alt="Avatar">
+                        <img src="${s.photoUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name) + '&background=4f46e5&color=fff&bold=true'}" class="table-avatar" alt="Avatar">
                         <div>
                           <strong>${s.name}</strong>
                           <div style="font-size:11px; color:var(--text-muted);">${s.email || s.admissionNo || ''}</div>
@@ -1144,7 +1144,7 @@ class SchoolApp {
           gender: "Male",
           status: "Active",
           joinedDate: new Date().toISOString().split("T")[0],
-          photoUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(inq.name)}`
+          photoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(inq.name)}&background=4f46e5&color=fff&bold=true`
         };
 
         await db.add(STORES.STUDENTS, newStudent);
@@ -1223,7 +1223,7 @@ class SchoolApp {
                 <tr>
                   <td>
                     <div class="table-user-cell">
-                      <img src="${s.photoUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + s.name}" class="table-avatar" alt="Avatar">
+                      <img src="${s.photoUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name) + '&background=4f46e5&color=fff&bold=true'}" class="table-avatar" alt="Avatar">
                       <div>
                         <strong>${s.name}</strong>
                         <div style="font-size:11px; color:var(--text-muted);"><i class="fa-solid fa-id-card"></i> <code>${s.cnic || '—'}</code></div>
@@ -1360,7 +1360,7 @@ class SchoolApp {
                 <tr>
                   <td>
                     <div class="table-user-cell">
-                      <img src="${t.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + t.name}" class="table-avatar" alt="Avatar">
+                      <img src="${t.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.name) + '&background=4f46e5&color=fff&bold=true'}" class="table-avatar" alt="Avatar">
                       <div>
                         <strong>${t.name}</strong>
                         <div style="font-size:11px; color:var(--text-muted);"><i class="fa-solid fa-id-card"></i> <code>${t.cnic || '—'}</code></div>
@@ -3104,7 +3104,7 @@ export function saveAppConfig(newConfig) {
                 <tr data-student-id="${s.id}">
                   <td>
                     <div class="table-user-cell">
-                      <img src="${s.photoUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + s.name}" class="table-avatar" alt="Avatar">
+                      <img src="${s.photoUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name) + '&background=4f46e5&color=fff&bold=true'}" class="table-avatar" alt="Avatar">
                       <div>
                         <strong>${s.name}</strong>
                         <div style="font-size:11px; color:var(--text-muted);">${s.admissionNo}</div>
@@ -3900,7 +3900,7 @@ export function saveAppConfig(newConfig) {
           </div>
           <div style="display:flex; align-items:center; gap:16px;">
             <div id="stdPhotoPreviewBox" style="width:72px; height:72px; border-radius:8px; border:2px dashed rgba(var(--primary-rgb),0.4); overflow:hidden; background:#ffffff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-              <img id="stdPhotoPreviewImg" src="${student?.photoUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + (student?.name || 'new')}" style="width:100%; height:100%; object-fit:cover;" alt="Photo">
+              <img id="stdPhotoPreviewImg" src="${student?.photoUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student?.name || 'new') + '&background=4f46e5&color=fff&bold=true'}" style="width:100%; height:100%; object-fit:cover;" alt="Photo">
             </div>
             <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
               <input type="file" id="stdModalPhotoFile" accept="image/*" style="display:none;">
@@ -3994,7 +3994,7 @@ export function saveAppConfig(newConfig) {
       const clsSelect = document.getElementById("stdModalClass");
       const chosenPhoto = document.getElementById("stdModalPhotoUrl").value.trim() || 
         student?.photoUrl || 
-        `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(document.getElementById("stdModalName").value)}`;
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(document.getElementById("stdModalName").value)}&background=4f46e5&color=fff&bold=true`;
 
       const data = {
         ...(student || {}),
@@ -4044,7 +4044,7 @@ export function saveAppConfig(newConfig) {
             <span style="font-size:11px; opacity:0.9;">OFFICIAL STUDENT IDENTITY CARD</span>
           </div>
           
-          <img src="${student.photoUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + student.name}" style="width:96px; height:96px; border-radius:50%; border:3px solid #4f46e5; object-fit:cover; margin-bottom:12px; background:#fff;" alt="Photo">
+          <img src="${student.photoUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.name) + '&background=4f46e5&color=fff&bold=true'}" style="width:96px; height:96px; border-radius:50%; border:3px solid #4f46e5; object-fit:cover; margin-bottom:12px; background:#fff;" alt="Photo">
           
           <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:4px;">${student.name}</h3>
           <span style="display:inline-block; background:#eef2ff; color:#4f46e5; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; margin-bottom:14px;">
@@ -4098,7 +4098,7 @@ export function saveAppConfig(newConfig) {
               <span class="admission-badge-pill">OFFICIAL STUDENT ADMISSION CARD / SLIP</span>
             </div>
             <div class="admission-photo-box">
-              <img src="${student.photoUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + student.name}" alt="Candidate Photo">
+              <img src="${student.photoUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.name) + '&background=4f46e5&color=fff&bold=true'}" alt="Candidate Photo">
             </div>
           </div>
 
@@ -4632,7 +4632,7 @@ export function saveAppConfig(newConfig) {
           </div>
           <div style="display:flex; align-items:center; gap:16px;">
             <div id="tchPhotoPreviewBox" style="width:72px; height:72px; border-radius:8px; border:2px dashed rgba(var(--primary-rgb),0.4); overflow:hidden; background:#ffffff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-              <img id="tchPhotoPreviewImg" src="${teacher?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (teacher?.name || 'faculty')}" style="width:100%; height:100%; object-fit:cover;" alt="Photo">
+              <img id="tchPhotoPreviewImg" src="${teacher?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(teacher?.name || 'faculty') + '&background=4f46e5&color=fff&bold=true'}" style="width:100%; height:100%; object-fit:cover;" alt="Photo">
             </div>
             <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
               <input type="file" id="tchModalPhotoFile" accept="image/*" style="display:none;">
@@ -4717,7 +4717,7 @@ export function saveAppConfig(newConfig) {
     document.getElementById("btnSaveTeacherModal")?.addEventListener("click", async () => {
       const chosenAvatar = document.getElementById("tchModalPhotoUrl").value.trim() ||
         teacher?.avatar ||
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(document.getElementById("tchModalName").value)}`;
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(document.getElementById("tchModalName").value)}&background=4f46e5&color=fff&bold=true`;
 
       const data = {
         ...(teacher || {}),
@@ -5405,7 +5405,7 @@ export function saveAppConfig(newConfig) {
         <div class="faculty-grid">
           ${teachers.length > 0 ? teachers.map(t => `
             <div class="faculty-card">
-              <img src="${t.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + t.name}" class="faculty-avatar" alt="${t.name}">
+              <img src="${t.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.name) + '&background=4f46e5&color=fff&bold=true'}" class="faculty-avatar" alt="${t.name}">
               <h3>${t.name}</h3>
               <div class="faculty-dept">${t.subject}</div>
               <div class="faculty-qual"><i class="fa-solid fa-graduation-cap"></i> ${t.qualification || 'M.Sc. / B.Ed'}</div>
