@@ -2779,27 +2779,7 @@ class SchoolApp {
     const logoPreviewBox = document.getElementById("logoPreviewBox");
     const btnRemoveLogo = document.getElementById("btnRemoveLogo");
 
-    logoUploadBtn?.addEventListener("click", () => logoFileInput?.click());
-
-    logoFileInput?.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        this.showToast("Uploading school logo to ImgBB cloud...", "info");
-        try {
-          const liveUrl = await uploadImageToImgbb(file);
-          if (logoUrlInput) logoUrlInput.value = liveUrl;
-          if (logoPreviewBox) {
-            logoPreviewBox.innerHTML = `<img src="${liveUrl}" class="logo-upload-preview-img" alt="School Logo">`;
-          }
-          this.config.logoUrl = liveUrl;
-          saveAppConfig({ logoUrl: liveUrl });
-          this.applyThemeAndBranding();
-          this.showToast("School logo uploaded & saved to ImgBB successfully!", "success");
-        } catch (err) {
-          this.showToast(`Upload failed: ${err.message}`, "error");
-        }
-      }
-    });
+    // v4.5 FIX — Removed dead logoUploadBtn/logoFileInput code (elements don't exist, caused Settings crash)
 
     btnRemoveLogo?.addEventListener("click", () => {
       if (confirm("Remove school logo? Default icon will be used.")) {
