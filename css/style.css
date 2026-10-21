@@ -1681,6 +1681,32 @@ ul {
   }
 }
 
+
+/* Dashboard two-column grid - responsive */
+.dashboard-two-col {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .dashboard-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Generic responsive two-column grid */
+.responsive-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 700px) {
+  .responsive-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .app-header {
     padding: 0 16px;

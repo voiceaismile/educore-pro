@@ -977,7 +977,7 @@ class SchoolApp {
       </div>
 
       <!-- Dashboard Two Column Grid -->
-      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
+      <div class="dashboard-two-col">
         
         <!-- Recent Students Table -->
         <div class="card">
@@ -2181,7 +2181,7 @@ class SchoolApp {
               <textarea class="form-control" id="lpProgramsSubtitle" rows="2">${programs.subtitle || 'Rigorous educational pathways tailored to cultivate analytical thinking, linguistic fluency, and competitive board preparation.'}</textarea>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="responsive-two-col">
               <div class="form-group">
                 <label class="form-label"><i class="fa-solid fa-shapes" style="color:var(--primary); margin-right:4px;"></i> Primary & Middle Wing Overview</label>
                 <textarea class="form-control" id="lpProgramsPrimary" rows="2" placeholder="Class 1 to 8 description...">${programs.primaryOverview || 'Class 1 to Class 8 comprehensive foundational education in English, Mathematics, General Science, and Social Studies.'}</textarea>
@@ -2268,7 +2268,7 @@ class SchoolApp {
               <textarea class="form-control" id="lpAdmissionSubtitle" rows="2">${admission.subtitle || 'Take the first step toward quality education. Submit your admission inquiry online and receive an instant application tracking number.'}</textarea>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="responsive-two-col">
               <div class="form-group">
                 <label class="form-label"><i class="fa-solid fa-calendar-check" style="color:#10b981; margin-right:4px;"></i> Academic Session</label>
                 <input type="text" class="form-control" id="lpAdmissionSession" value="${admission.session || 'Session 2026 - 2027'}" placeholder="e.g. Session 2026 - 2027">
@@ -2312,7 +2312,7 @@ class SchoolApp {
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="responsive-two-col">
               <div class="form-group">
                 <label class="form-label"><i class="fa-regular fa-clock" style="color:#f59e0b; margin-right:4px;"></i> Admissions & Office Hours</label>
                 <input type="text" class="form-control" id="lpContactHours" value="${contact.hours || 'Monday to Saturday: 8:00 AM - 2:00 PM'}" placeholder="e.g. Mon-Sat: 8:00 AM - 2:00 PM">
@@ -2329,7 +2329,7 @@ class SchoolApp {
               <input type="text" class="form-control" id="lpContactAddress" value="${contact.address || config.contact.address || 'Campus Address, Pakistan'}" required>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="responsive-two-col">
               <div class="form-group">
                 <label class="form-label"><i class="fa-solid fa-phone" style="color:#10b981; margin-right:4px;"></i> Official Phone & WhatsApp</label>
                 <input type="text" class="form-control" id="lpContactPhone" value="${contact.phone || config.contact.phone || '0300-1111111'}" required>
@@ -2532,7 +2532,7 @@ class SchoolApp {
           <!-- Cloud Backup Operations -->
           <div>
             <span style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:10px;">Cloud & Local Data Management</span>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="responsive-two-col" style="gap:10px;">
               <button class="btn btn-secondary btn-sm" id="btnCloudBackupNow">
                 <i class="fa-solid fa-cloud-arrow-up" style="color:var(--primary);"></i> Sync Cloud Backup
               </button>
@@ -3314,7 +3314,7 @@ export function saveAppConfig(newConfig) {
       </div>
 
       <!-- Quick Action Cards -->
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+      <div class="responsive-two-col" style="gap:24px;">
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Recent Grades</h3>
