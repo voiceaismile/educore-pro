@@ -609,7 +609,7 @@ class SchoolApp {
     }
 
     // Default view for role if view does not match
-    const validViews = items.map(i => i.id);
+    const validViews = (this._lastNavItems || []).map(i => i.id);
     if (!validViews.includes(this.currentView)) {
       this.currentView = validViews[0];
     }
